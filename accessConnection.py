@@ -13,6 +13,16 @@ class Files(Base):
     file_location = Column(String(50))
     file_type = Column(String(50))
 
+
+
+class AbbyyServerJobs(Base):
+
+    __tablename__ = 'abbyyServerJobs'
+    id = Column(Integer, primary_key=True)
+    jobId = Column(String(50))
+    file_id = Column(Integer)
+    state = Column(String(50))
+
 print(os.path.isfile(r"C:\\Users\\913678186\\IdeaProjects\\RemediationTests\\ACRS.accdb"))
 
 connection_string = (
@@ -23,10 +33,12 @@ connection_uri = f"access+pyodbc:///?odbc_connect={quote_plus(connection_string)
 engine = create_engine(connection_uri)
 
 
-Session = sessionmaker()
-Session.configure(bind=engine)
 
-dbsess = Session()
+def get_session():
+
+    Session = sessionmaker()
+    Session.configure(bind=engine)
+    return Session()
 
 
 
