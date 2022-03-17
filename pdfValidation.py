@@ -1,6 +1,6 @@
 from pdfminer import high_level
 import pdfminer
-import glob
+
 
 def page_contains_text(page):
     if page.groups is None:
@@ -13,12 +13,11 @@ def page_contains_text(page):
 
 def image_over_text(page):
 
-
     for item in list(page):
 
         if isinstance(item, pdfminer.layout.LTFigure):
             variance = (item.x1 * item.y1) / (page.x1 * page.y1)
-            if variance > 0.9 and variance < 1.1: # Check to see if the size of the text image is the same as the page
+            if 0.9 < variance < 1.1:  # Check to see if the size of the text image is the same as the page
                 return True
             else:
                 continue
@@ -61,16 +60,3 @@ def pdf_status(document_location):
         return 2  # Only Image of Text
     if t1 == 0 and t2 == 0:
         return 3  # No image of text and no page text
-
-
-
-
-# print(pdf_status("Z:\ACRS\Requests\PHIL 101.01\III. Social Construction\HaslangerOSC.pdf"))
-
-
-downloaded_files = glob.glob(r"Z:\ACRS\Requests" + '\**\*[.pdf]', recursive=True)
-
-print(downloaded_files)
-
-for each in downloaded_files:
-    print(each, pdf_status(each))
