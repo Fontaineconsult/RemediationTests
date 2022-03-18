@@ -1,6 +1,6 @@
 import os.path
 from urllib.parse import quote_plus
-from sqlalchemy import create_engine, Integer, Column, String, DateTime
+from sqlalchemy import create_engine, Integer, Column, String, DateTime, Boolean
 from sqlalchemy.orm import sessionmaker, declarative_base
 Base = declarative_base()
 from datetime import datetime
@@ -12,6 +12,7 @@ class Files(Base):
     file_name = Column(String(50))
     file_location = Column(String(50))
     file_type = Column(String(50))
+    origin_requester_id = Column(Integer())
 
 
 
@@ -32,6 +33,7 @@ class Videos(Base):
     title = Column(String())
     source_url = Column(String())
     date_added = Column(DateTime, default=datetime.utcnow)
+    origin_requester_id = Column(Integer())
 
 
 
@@ -96,7 +98,18 @@ class FileConversions(Base):
     __tablename__ = 'file_conversions'
     id = Column(Integer, primary_key=True)
     file_id = Column(Integer())
+    source_hierarchy = Column(String())
     conversion_req_id = Column(Integer())
+    pdf_access_check = Column(Integer())
+    project_dir = Column(String())
+
+class ConversionRequests(Base):
+
+    __tablename__ = 'conversion_requests'
+    id = Column(Integer, primary_key=True)
+    conversion_requester = Column(Integer())
+    comments = Column(String())
+    files_imported = Column(Boolean())
 
 
 
