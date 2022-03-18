@@ -3,6 +3,7 @@ import hashlib
 from accessConnection import get_session, Files, Videos
 
 sys.path.append(r"C:\Users\913678186\IdeaProjects\Moodle_Scraper_V3")
+sys.path.append(r"C:\Users\DanielPC\Desktop\Moodle_Scraper_V3")
 from content_scaffolds.file import ContentFile
 from core_classes.iLearnPage import iLearnPage
 from network.session_manager import MoodleSession
@@ -27,9 +28,10 @@ def clean_filename(name: str):
     return name
 
 pages = [
-        ("OL-StrategiesSuccess", "collab", "2152"),
-         ("PHIL 101.01", "standard", "18241"),
-         ("E_ED 0786-07", "standard", "14719")
+
+        ("OL-StrategiesSuccess", "collab", "2152", 3),
+         ("PHIL 101.01", "standard", "18241", 1),
+         ("E_ED 0786-07", "standard", "14719", 2)
 ]
 
 
@@ -86,7 +88,8 @@ for page in pages:
                             file_hash = hasher.hexdigest(),
                             file_name = os.path.basename(file_location),
                             file_location = file_location,
-                            file_type = os.path.splitext(file_location)[1]
+                            file_type = os.path.splitext(file_location)[1],
+                            origin_requester_id = page[3]
                         )
                         session.add(file)
                         session.commit()
@@ -99,6 +102,7 @@ for page in pages:
                         media_type = "Not Sure",
                         title = item.title,
                         source_url = item.url,
+                        origin_requester_id = page[3]
                     )
                     session.add(file)
                     session.commit()

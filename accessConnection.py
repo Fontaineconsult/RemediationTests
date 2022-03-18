@@ -34,6 +34,15 @@ class Videos(Base):
     date_added = Column(DateTime, default=datetime.utcnow)
 
 
+
+class CourseAssignments(Base):
+
+    __tablename__ = 'course_assignments'
+    id = Column(Integer, primary_key=True)
+    employee_id = Column(String(9))
+    course_id = Column(Integer())
+
+
 class Courses(Base):
 
     __tablename__ = 'courses'
@@ -42,6 +51,52 @@ class Courses(Base):
     course_id = Column(String(50))
     ilearn_id = Column(String(50))
     semester = Column(String(50))
+
+class CampusAssociation(Base):
+
+    __tablename__ = 'campus_association'
+    id = Column(Integer, primary_key=True)
+    campus_org_id = Column(Integer)
+    employee_id = Column(String(9))
+
+
+class Employee(Base):
+
+    __tablename__ = 'employee'
+    employee_id = Column(String(9), primary_key=True)
+    first_name = Column(String())
+    last_name = Column(String())
+    email = Column(String())
+
+class Orgs(Base):
+
+    __tablename__ = 'orgs'
+    id = Column(Integer, primary_key=True)
+    org_name = Column(String())
+    org_contact = Column(String())
+    org_email = Column(String())
+
+class ConversionRequester(Base):
+
+    __tablename__ = 'conversion_requester'
+    id = Column(Integer, primary_key=True)
+    course_id = Column(Integer())
+    campus_association_id = Column(Integer())
+
+class VideoConversions(Base):
+
+    __tablename__ = 'video_conversions'
+    id = Column(Integer, primary_key=True)
+    video_id = Column(Integer())
+    conversion_req_id = Column(Integer())
+
+
+class FileConversions(Base):
+
+    __tablename__ = 'file_conversions'
+    id = Column(Integer, primary_key=True)
+    file_id = Column(Integer())
+    conversion_req_id = Column(Integer())
 
 
 
