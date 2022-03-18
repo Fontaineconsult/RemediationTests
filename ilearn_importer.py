@@ -89,7 +89,7 @@ for page in pages:
                             file_name = os.path.basename(file_location),
                             file_location = file_location,
                             file_type = os.path.splitext(file_location)[1],
-                            origin_requester_id = page[3]
+                            origin_requester_id=page[3]
                         )
                         session.add(file)
                         session.commit()
@@ -102,7 +102,7 @@ for page in pages:
                         media_type = "Not Sure",
                         title = item.title,
                         source_url = item.url,
-                        origin_requester_id = page[3]
+                        origin_requester_id=page[3]
                     )
                     session.add(file)
                     session.commit()
