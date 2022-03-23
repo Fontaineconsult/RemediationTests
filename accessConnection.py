@@ -1,6 +1,6 @@
 import os.path
 from urllib.parse import quote_plus
-from sqlalchemy import create_engine, Integer, Column, String, DateTime, Boolean
+from sqlalchemy import create_engine, Integer, Column, String, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import sessionmaker, declarative_base
 Base = declarative_base()
 from datetime import datetime
@@ -97,10 +97,9 @@ class FileConversions(Base):
 
     __tablename__ = 'file_conversions'
     id = Column(Integer, primary_key=True)
-    file_id = Column(Integer())
+    file_id = Column(Integer(), ForeignKey("files.id"))
     source_hierarchy = Column(String())
     conversion_req_id = Column(Integer())
-    pdf_access_check = Column(Integer())
     project_dir = Column(String())
 
 class ConversionRequests(Base):
@@ -110,6 +109,28 @@ class ConversionRequests(Base):
     conversion_requester = Column(Integer())
     comments = Column(String())
     files_imported = Column(Boolean())
+
+class PDFMetadata(Base):
+
+    __tablename__ = 'pdf_metadata'
+    id = Column(Integer, primary_key=True)
+    file_id = Column(Integer())
+    is_tagged = Column(Boolean())
+    text_type = Column(Integer())
+    total_figures = Column(Integer())
+    total_alt_tags = Column(Integer())
+    has_doc_desc = Column(Boolean())
+    stage_folder = Column(String())
+    title_set = Column(Boolean())
+    lang_set = Column(Boolean())
+
+class PDFMetadataAssignments(Base):
+
+    __tablename__ = 'pdf_metadata_assignment'
+    id = Column(Integer, primary_key=True)
+    source_file_id = Column(Integer())
+    conversion_file_id = Column(Integer())
+    metadata_id = Column(Integer())
 
 
 
@@ -121,7 +142,6 @@ connection_string = (
     r"ExtendedAnsiSQL=1;")
 connection_uri = f"access+pyodbc:///?odbc_connect={quote_plus(connection_string)}"
 engine = create_engine(connection_uri)
-
 
 
 def get_session():
