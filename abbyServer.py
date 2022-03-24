@@ -1,6 +1,6 @@
 import os.path
 import time
-from accessConnection import get_session, Files, AbbyyServerJobs
+from accessConnection import get_session, Files, AbbyyServerJobs, FileConversions
 
 
 import comtypes.client as cc
@@ -32,6 +32,11 @@ if not workflowFound:
 import comtypes.gen.ABBYYFineReaderServer as clientTypeLib
 session = get_session()
 
+
+
+
+
+
 # files_to_process = session.query(Files).all()
 # for each in files_to_process:
 #     print(each.file_location)
@@ -46,17 +51,14 @@ session = get_session()
 #
 #
 #
-print(dir(document))
-print(document.Attributes.DocumentType)
+# print(dir(document))
+# print(document.Attributes.DocumentType)
 
-JobIdsQuery = session.query(AbbyyServerJobs).all()
 
-allJobIds = [JobIdQuery.jobId for JobIdQuery in JobIdsQuery]
 
-# while True:
-#     time.sleep(1)
-#     for each in allJobIds:
-#         print(each)
-#         state = client.StringsCollection(each)
-#         print(state)
-# c
+
+
+# JobIdsQuery = session.query(AbbyyServerJobs).all()
+#
+# allJobIds = [JobIdQuery.jobId for JobIdQuery in JobIdsQuery]
+#

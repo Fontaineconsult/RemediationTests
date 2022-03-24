@@ -99,8 +99,9 @@ class FileConversions(Base):
     id = Column(Integer, primary_key=True)
     file_id = Column(Integer(), ForeignKey("files.id"))
     source_hierarchy = Column(String())
-    conversion_req_id = Column(Integer())
+    conversion_req_id = Column(Integer(), ForeignKey("conversion_requests.id"))
     project_dir = Column(String())
+    file_type = Column(String())
 
 class ConversionRequests(Base):
 

@@ -48,8 +48,6 @@ def create_file_conversion(request_id):
                 conversion_req_id = request.id,
                 source_hierarchy = source_hierachy,
                 project_dir = os.path.join(project_files_dir, file.file_hash),
-
-
             )
             session.add(fileconversion)
 
@@ -57,7 +55,7 @@ def create_file_conversion(request_id):
     session.close()
 
 
-# create_file_conversion(1)
+
 
 def pdf_accessibility_check(conversion_id: int, stage: str):
 
@@ -97,5 +95,3 @@ def pdf_accessibility_check(conversion_id: int, stage: str):
         print("No Access")
 
 
-
-pdf_accessibility_check(876, "source")
