@@ -1,6 +1,6 @@
 from pdfminer import high_level
 import pdfminer
-from pikepdf import Pdf, Dictionary, Array, String, Object
+from pikepdf import Pdf, Dictionary, Array, String, Object, Name
 
 
 
@@ -89,24 +89,39 @@ def check_for_alt_tags(document):
     document_photos = list()
     if not check_if_tagged(document):
         raise Exception("PDF Not Tagged")
-
+    print(repr(root))
     def recurse(node):
 
         if isinstance(node, Dictionary):
             if '/K' in node.keys():
                 next_node = node.get('/K')
                 recurse(next_node)
+            if '/A' in node.keys():
+                next_node = node.get('/A')
+                recurse(next_node)
         if isinstance(node, Array):
             for item in node:
                 if isinstance(item, Dictionary):
-                    if "/A" in item.keys():
+                    print("DICTIONARY")
+                if isinstance(item, Array):
+                    print("Arrayyyy")
 
+
+                if isinstance(item, Dictionary):
+
+                    # if '/Alt' in item.keys():
+                    #     if '/S' in item.keys():
+                    #         print(repr(item.get("/S")))
+                    #         print(repr(item.get("/Pg")))
+
+                    if "/A" in item.keys():
                         try:
                             if '/BBox' in item.get('/A'):
                                 if '/Alt' in item.keys():
                                     document_photos.append(True)
                                 else:
                                     document_photos.append(False)
+
                         except TypeError:
                             if String('/BBox') in item.get('/A'):
                                 if '/Alt' in item.keys():
@@ -114,10 +129,15 @@ def check_for_alt_tags(document):
                                 else:
                                     document_photos.append(False)
 
-
                     if "/K" in item.keys():
                         next_node = item.get('/K')
                         recurse(next_node)
+
+                if isinstance(item, Array):
+
+                    print("___________ array in array")
+                    recurse(item)
+
 
     recurse(root)
     return document_photos
@@ -166,3 +186,5 @@ def pdf_check(location):
     return obj
 
 
+# print(pdf_check(r"Z:\ACRS\project_files\ae37b2abbe4bd48244c604f602464fdca6563f8c6378e53e27430d55b8638fd5\source\EDD 786-07 Sp22 Syllabus.pdf"))
+print(pdf_check(r"Z:\ACRS\project_files\1f2b9c41f10c0dcbc69ffe9adc6c03ee55bba87c70fe687213c4ebccb56284ff\source\Blooms Taxonomy for Teaching Lesson Design.pdf"))
