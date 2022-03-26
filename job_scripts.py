@@ -20,7 +20,9 @@ def create_file_conversion(request_id):
     session = get_session()
 
     request = session.query(ConversionRequests).filter_by(id=request_id).first()
+    print(request)
     files = session.query(Files).filter_by(origin_requester_id = request.conversion_requester).all()
+
     videos = session.query(Videos).filter_by(origin_requester_id = request.conversion_requester).all()
 
     for file in files:
@@ -95,3 +97,18 @@ def pdf_accessibility_check(conversion_id: int, stage: str):
         print("No Access")
 
 
+def bulk_pdf_check(conversion_id: int, stage: str):
+
+    if stage not in ["source", "active", "complete"]:
+        raise Exception("Allowed Stages are: source, active, complete")
+
+
+    session = get_session()
+    conversions = session.query(FileConversions).filter_by(conversion_req_id = conversion_id).all()
+
+    for conversion in conversions:
+        pdf_accessibility_check(conversion.id, stage)
+
+
+
+bulk_pdf_check(1, "source")
