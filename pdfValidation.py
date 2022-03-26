@@ -1,7 +1,7 @@
 from pdfminer import high_level
 import pdfminer
+from pikepdf import Pdf, Dictionary, Array, String, Object
 
-from pikepdf import Pdf, Page, PdfImage, OutlineItem
 
 
 
@@ -19,22 +19,26 @@ def image_over_text(page):
     for item in list(page):
 
         if isinstance(item, pdfminer.layout.LTFigure):
-            variance = (item.x1 * item.y1) / (page.x1 * page.y1)
+            variance = ((item.x1 - item.x0) * (item.y1 - item.y0)) / ((page.x1 - page.x0) * (page.y1 - page.y0))
+
             if 0.9 < variance < 1.1:  # Check to see if the size of the text image is the same as the page
                 return True
             else:
                 continue
-        return False
+        continue
+    return False
 
 
 def check_status(document_location):
     pages = list(high_level.extract_pages(document_location))
+
     to_return = []
     for page in pages:
 
         image = image_over_text(page)
         text = page_contains_text(page)
         to_return.append((image,text))
+
     return to_return
 
 
@@ -65,52 +69,100 @@ def pdf_status(document_location):
         return 3  # No image of text and no page text
 
 
+def check_if_tagged(document):
+    if isinstance(document, str):
+        pdf = Pdf.open(document)
+        if pdf.Root.get("/StructTreeRoot") is not None:
+            return True
+        else:
+            return False
+    if isinstance(document, Pdf):
+        if document.Root.get("/StructTreeRoot") is not None:
+            return True
+        else:
+            return False
 
 
-def test(document_location):
+def check_for_alt_tags(document):
 
-    pdf = Pdf.open(document_location)
+    root = document.Root.get("/StructTreeRoot")
+    document_photos = list()
+    if not check_if_tagged(document):
+        raise Exception("PDF Not Tagged")
 
+    def recurse(node):
 
-    # print(pdf.pages[0])
-    # imgs = pdf.pages[0].images['/Im0']
-    #
-    # obj = PdfImage(imgs)
-    # print(obj.colorspace)
-    # print((pdf.pages[0].get("/Resources").get("/Font")))
-    # print(dir(pdf.pages[0].Resources.XObject.Im1))
-    # print(pdf.pages[0].Resources.XObject.Im1.to_json())
+        if isinstance(node, Dictionary):
+            if '/K' in node.keys():
+                next_node = node.get('/K')
+                recurse(next_node)
+        if isinstance(node, Array):
+            for item in node:
+                if isinstance(item, Dictionary):
+                    if "/A" in item.keys():
 
-    # print(dir(pdf.Root.get('/StructTreeRoot')))
-    #
-    # zerk = pdf.Root.get('/StructTreeRoot')
-    # print(zerk.read_bytes())
-    # print(dir(zerk.ParentTree))
-    # print(dir(zerk.ParentTree.items()))
-    # print(root[3])
-
-    root1 = pdf.Root.get("/Outlines")
-    # print(list(root1))
-    # print(list(root1.get("/First").get("/First").get("/SE").get("/K")[0].get("/K")[0]))
-    # print(root1.get("/First").get("/First").get("/SE").get("/K")[0].get("/K")[0].get("/Alt"))
-
-    # print(list(root1))
-    # print(list(root1["/First"]))
-    # print(list(root1["/First"]["/First"]))
-    # print(list(root1["/First"]["/First"]["/SE"]))
-    print((root1['/First']['/First']['/SE']['/K'][1]['/P']['/K'][0]['/K'][0]['/Pg']['/Resources']['/XObject']['/Im1']['/ID']))
+                        try:
+                            if '/BBox' in item.get('/A'):
+                                if '/Alt' in item.keys():
+                                    document_photos.append(True)
+                                else:
+                                    document_photos.append(False)
+                        except TypeError:
+                            if String('/BBox') in item.get('/A'):
+                                if '/Alt' in item.keys():
+                                    document_photos.append(True)
+                                else:
+                                    document_photos.append(False)
 
 
-    # print(len(list(root1.get("/First").get("/First").get("/SE").get("/K"))))
-    #
-    # tst = list(root1.get("/First").get("/First").get("/SE").get("/K"))[0]
+                    if "/K" in item.keys():
+                        next_node = item.get('/K')
+                        recurse(next_node)
+
+    recurse(root)
+    return document_photos
+
+
+def check_metadata(document):
+
+    meta = {
+        "title": False,
+        "language": False,
+    }
+
+    metadata = document.open_metadata()
+    if isinstance(document.Root.get("/Lang"), Object):
+        meta['language'] = True
+    if metadata.get("dc:title"):
+        meta['title'] = True
+    return meta
 
 
 
 
+# check_metadata(r"Z:\ACRS\Requests\E_ED 0786-07\Math Resources\Learning About Rulers and Measuring.pdf")
+# check_metadata(r"Z:\ACRS\Requests\E_ED 0786-07\Math Resources\Learning Geometry-  Some Insights Drawn from Teacher Writing.pdf")
 
-    # print(lorp.items)
 
+def pdf_check(location):
 
-test(r"Z:\ACRS\project_files\ab780356aac11e379d56431b4f3a5de454e2910ce46d52f0804b21481d7d09de\source\Number Sense -Ed Leadership.pdf")
+    Pikepdf = Pdf.open(location)
+
+    tagged = check_if_tagged(Pikepdf)
+    if tagged:
+        alt_tag_count = check_for_alt_tags(Pikepdf)
+    else:
+        alt_tag_count = []
+    pdf_text_type = pdf_status(location)
+
+    obj = {
+
+        "tagged": tagged,
+        "alt_tag_count": alt_tag_count,
+        "pdf_text_type": pdf_text_type,
+        "metadata": check_metadata(Pikepdf)
+
+    }
+    return obj
+
 

@@ -76,6 +76,7 @@ for page in pages:
             if item.downloadable:
 
                 file_location = download(item, page[0], clean_filename(content.section_title), ilearnpage.session)
+
                 if file_location:
                     if os.path.isfile(file_location):
                         with open(file_location, 'rb') as afile:
@@ -83,6 +84,7 @@ for page in pages:
                             hasher.update(buf)
                             file_hash = hasher.hexdigest()
                     file_exists = session.query(Files).filter_by(file_location=file_location).first()
+
                     if not file_exists:
                         file = Files(
                             file_hash = hasher.hexdigest(),
