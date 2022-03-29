@@ -62,36 +62,61 @@ def create_file_conversion(request_id):
 def pdf_accessibility_check(conversion_id: int, stage: str):
 
     session = get_session()
+
+
+
+
+
+
     conversion = session.query(FileConversions, Files)\
         .join(Files, FileConversions.file_id == Files.id).filter(FileConversions.id==conversion_id).first()
 
-
-    print(conversion)
     try:
         check = pdf_check(os.path.join(conversion[0].project_dir, stage, conversion[1].file_name))
 
-        metadata = PDFMetadata(
-            is_tagged=check['tagged'],
-            text_type=check['pdf_text_type'],
-            total_figures=len(check['alt_tag_count']),
-            total_alt_tags=len([True for x in check['alt_tag_count'] if x is True]),
-            stage_folder="source",
-            title_set=check['metadata']['title'],
-            lang_set=check['metadata']['language']
+        check_meta_assign = session.query(PDFMetadataAssignments).filter_by(conversion_file_id = conversion[0].id).first()
 
-        )
+        if check_meta_assign:
 
-        session.add(metadata)
-        session.flush()
-        session.refresh(metadata)
+            existing_meta_record = session.query(PDFMetadata).filter_by(id=check_meta_assign.metadata_id).first()
 
-        assignment = PDFMetadataAssignments(
-            metadata_id = metadata.id,
-            conversion_file_id = conversion[0].id
-        )
+            print(conversion[0].id)
 
-        session.add(assignment)
-        session.commit()
+            existing_meta_record.is_tagged = check['tagged']
+            existing_meta_record.text_type = check['pdf_text_type']
+            existing_meta_record.total_figures = len(check['alt_tag_count'])
+            existing_meta_record.total_alt_tags = len([True for x in check['alt_tag_count'] if x is True])
+            existing_meta_record.stage_folder = "source"
+            existing_meta_record.title_set = check['metadata']['title']
+            existing_meta_record.lang_set = check['metadata']['language']
+
+            session.commit()
+
+        else:
+
+            metadata = PDFMetadata(
+                is_tagged=check['tagged'],
+                text_type=check['pdf_text_type'],
+                total_figures=len(check['alt_tag_count']),
+                total_alt_tags=len([True for x in check['alt_tag_count'] if x is True]),
+                stage_folder="source",
+                title_set=check['metadata']['title'],
+                lang_set=check['metadata']['language']
+
+            )
+
+            session.add(metadata)
+            session.flush()
+            session.refresh(metadata)
+
+            assignment = PDFMetadataAssignments(
+                metadata_id = metadata.id,
+                stage_folder = stage,
+                conversion_file_id = conversion[0].id
+            )
+
+            session.add(assignment)
+            session.commit()
 
     except PermissionError:
         print("No Access")

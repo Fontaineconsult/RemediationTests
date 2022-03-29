@@ -147,6 +147,7 @@ class PDFMetadataAssignments(Base):
     source_file_id = Column(Integer(), ForeignKey("files.id"))
     conversion_file_id = Column(Integer(), ForeignKey("file_conversions.id"))
     metadata_id = Column(Integer(), ForeignKey("pdf_metadata.id"))
+    stage_folder = Column(String())
 
 
 #
