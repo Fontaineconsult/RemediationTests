@@ -16,7 +16,14 @@ download_dir = r"Z:\ACRS\Requests"
 project_files_dir = r"Z:\ACRS\project_files"
 
 
-def create_file_conversion(request_id):
+def create_file_conversion(request_id: int):
+
+    """
+    Copies files from staging directory and moves them into project directory staged.
+    :param request_id:
+    :return:
+    """
+
     session = get_session()
 
     request = session.query(ConversionRequests).filter_by(id=request_id).first()
@@ -55,6 +62,28 @@ def create_file_conversion(request_id):
 
     session.commit()
     session.close()
+
+
+def start_file_conversion(file_conversion_id: int):
+
+    """
+    Moves files into Active Directory and creates DB entries.
+    :param file_conversion_id:
+    :return:
+    """
+    session = get_session()
+    request = session.query(ConversionRequests).filter_by(id=file_conversion_id).first()
+
+
+
+
+
+
+
+
+
+
+
 
 
 

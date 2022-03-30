@@ -14,6 +14,18 @@ class Files(Base):
     origin_requester_id = Column(Integer(), ForeignKey("conversion_requester.id"))
 
 
+
+class ConversionFilesAssignments(Base):
+
+    __tablename__ = 'conversion_file_assignments'
+    id = Column(Integer, primary_key=True)
+    conversion_id = Column(Integer(),  ForeignKey("file_conversions.id"))
+    file_id = Column(Integer(), ForeignKey("files.id"))
+    stage = Column(String())
+
+
+
+
 class BoxLocations(Base):
 
     __tablename__ = "box_locations"
