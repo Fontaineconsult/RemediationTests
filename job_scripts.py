@@ -132,5 +132,5 @@ def bulk_pdf_check(conversion_id: int, stage: str):
         pdf_accessibility_check(conversion.id, stage)
 
 
-create_file_conversion(4)
-# bulk_pdf_check(2, "source")
+# create_file_conversion(4)
+bulk_pdf_check(4, "source")
