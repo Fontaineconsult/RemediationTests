@@ -124,6 +124,7 @@ class ConversionRequests(Base):
     conversion_requester = Column(Integer(), ForeignKey("conversion_requester.id"))
     comments = Column(String())
     files_imported = Column(Boolean())
+    import_folder = Column(String())
 
 class PDFMetadata(Base):
 
