@@ -1,5 +1,4 @@
-import os.path
-from urllib.parse import quote_plus
+
 from sqlalchemy import create_engine, Integer, Column, String, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import sessionmaker, declarative_base
 Base = declarative_base()
@@ -139,6 +138,7 @@ class PDFMetadata(Base):
     stage_folder = Column(String())
     title_set = Column(Boolean())
     lang_set = Column(Boolean())
+    number_of_pages = Column(Integer())
 
 class PDFMetadataAssignments(Base):
 

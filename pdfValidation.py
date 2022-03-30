@@ -93,7 +93,7 @@ def check_for_alt_tags(document):
     roleMap = root.get("/RoleMap")
     document_photos = list()
     IDDict = {}
-    print(repr(roleMap))
+
     if not check_if_tagged(document):
         raise Exception("PDF Not Tagged")
     # print(repr(document.Root.get("/Names")))
@@ -138,7 +138,6 @@ def check_for_alt_tags(document):
                         IDDict[derived_id] = [key]
 
                         if "/Alt" in node.keys() and len(str(node.get('/Alt'))) > 0:
-                            print("NODE", node.keys(), len(str(node.get('/Alt'))))
                             IDDict[derived_id] = True
                         else:
                             IDDict[derived_id] = False
@@ -203,6 +202,15 @@ def check_metadata(document):
     return meta
 
 
+def get_doc_data(document):
+
+    doc_data = {
+        "pages":len(document.pages)
+    }
+    return doc_data
+
+
+
 
 
 # check_metadata(r"Z:\ACRS\Requests\E_ED 0786-07\Math Resources\Learning About Rulers and Measuring.pdf")
@@ -225,13 +233,14 @@ def pdf_check(location):
         "tagged": bool(tagged),
         "alt_tag_count": alt_tag_count,
         "pdf_text_type": pdf_text_type,
-        "metadata": check_metadata(Pikepdf)
+        "metadata": check_metadata(Pikepdf),
+        "doc_data": get_doc_data(Pikepdf),
 
     }
     return obj
 
 
 # print(pdf_check(r"Z:\ACRS\project_files\ae37b2abbe4bd48244c604f602464fdca6563f8c6378e53e27430d55b8638fd5\source\EDD 786-07 Sp22 Syllabus.pdf"))
-print(pdf_check(r"Z:\ACRS\project_files\1f2b9c41f10c0dcbc69ffe9adc6c03ee55bba87c70fe687213c4ebccb56284ff\source\Blooms Taxonomy for Teaching Lesson Design.pdf"))
+# print(pdf_check(r"Z:\ACRS\project_files\1f2b9c41f10c0dcbc69ffe9adc6c03ee55bba87c70fe687213c4ebccb56284ff\source\Blooms Taxonomy for Teaching Lesson Design.pdf"))
 # print(pdf_check(r"Z:\ACRS\project_files\8b8999c25661c10085d0ababe7050af301ebc78f9dbb03edeeab187db0424aca\source\EdTPA Making Good Choices 21-22.pdf"))
 # print(pdf_check(r"Z:\ACRS\project_files\fdf547da4d49ff8410276d99cbece4cd9b6afe2dd5f2636bcb7dd2357f933e1b\source\Ladder-of-Inference-Overview.pdf"))
