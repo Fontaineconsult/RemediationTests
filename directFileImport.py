@@ -3,8 +3,8 @@ from accessConnection import get_session, Files, Videos, ConversionRequests
 
 home = "Z:\ACRS\Requests"
 
-def importFilesFromDisk(request_id):
 
+def importfilesfromdisk(request_id):
     hasher = hashlib.sha256()
     session = get_session()
 
@@ -14,20 +14,21 @@ def importFilesFromDisk(request_id):
     files = glob.glob(import_folder + '\**' + '\*.pdf', recursive=True)
 
     for file in files:
-
+        print(file)
         if os.path.isfile(file):
             with open(file, 'rb') as afile:
                 buf = afile.read()
                 hasher.update(buf)
                 file_hash = hasher.hexdigest()
+
         file_exists = session.query(Files).filter_by(file_location=file).first()
 
         if not file_exists:
             file = Files(
-                file_hash = hasher.hexdigest(),
-                file_name = os.path.basename(file),
-                file_location = file,
-                file_type = os.path.splitext(file)[1],
+                file_hash=file_hash,
+                file_name=os.path.basename(file),
+                file_location=file,
+                file_type=os.path.splitext(file)[1],
                 origin_requester_id=conversion_requester
             )
             session.add(file)
@@ -35,3 +36,4 @@ def importFilesFromDisk(request_id):
             session.close()
 
 
+importfilesfromdisk(4)

@@ -2,11 +2,13 @@
 import sys, os
 import shutil
 from accessConnection import get_session,\
-    Files, Videos, ConversionRequests, FileConversions, PDFMetadata, PDFMetadataAssignments
+    Files, Videos, ConversionRequests, FileConversions, PDFMetadata, PDFMetadataAssignments, ConversionFilesAssignments
 from pdfValidation import pdf_status, check_if_tagged, check_for_alt_tags, pdf_check
-
+import hashlib
 sys.path.append(r"C:\Users\913678186\IdeaProjects\Moodle_Scraper_V3")
 sys.path.append(r"C:\Users\DanielPC\Desktop\Moodle_Scraper_V3")
+
+hasher = hashlib.sha256()
 
 from content_scaffolds.file import ContentFile
 from core_classes.iLearnPage import iLearnPage
@@ -33,6 +35,7 @@ def create_file_conversion(request_id: int):
     videos = session.query(Videos).filter_by(origin_requester_id = request.conversion_requester).all()
 
     for file in files:
+        print(file)
         if not os.path.isdir(os.path.join(project_files_dir, file.file_hash)):
             os.mkdir(os.path.join(project_files_dir, file.file_hash))
             if not os.path.isdir(os.path.join(project_files_dir, file.file_hash, "source")):
@@ -47,20 +50,41 @@ def create_file_conversion(request_id: int):
             shutil.copyfile(file.file_location,
                             os.path.join(project_files_dir, file.file_hash, 'source', file.file_name))
 
-        source_path = os.path.normpath(file.file_location).split("\\")[3:-1]
-        source_hierachy = os.path.join(*source_path)
+            new_file = Files(
+                file_hash=file.file_hash,
+                file_name=file.file_name,
+                file_location= os.path.join(project_files_dir, file.file_hash, 'source', file.file_name),
+                file_type=file.file_type,
+                origin_requester_id = file.origin_requester_id
 
-        if file.file_type == ".pdf":
-
-            fileconversion = FileConversions(
-                file_id = file.id,
-                conversion_req_id = request.id,
-                source_hierarchy = source_hierachy,
-                project_dir = os.path.join(project_files_dir, file.file_hash),
             )
-            session.add(fileconversion)
 
-    session.commit()
+            session.add(new_file)
+            source_path = os.path.normpath(file.file_location).split("\\")[3:-1]
+            source_hierachy = os.path.join(*source_path)
+
+
+            if file.file_type == ".pdf":
+
+                fileconversion=FileConversions(
+                    conversion_req_id=request.id,
+                    source_hierarchy=source_hierachy,
+                    project_dir=os.path.join(project_files_dir, file.file_hash),
+
+                )
+                session.add(fileconversion)
+
+                session.flush()
+
+                assignment = ConversionFilesAssignments(
+
+                    conversion_id=fileconversion.id,
+                    file_id=new_file.id,
+                    stage="source",
+                )
+                session.add(assignment)
+
+                session.commit()
     session.close()
 
 
@@ -77,28 +101,24 @@ def start_file_conversion(file_conversion_id: int):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 def pdf_accessibility_check(conversion_id: int, stage: str):
 
     session = get_session()
 
-    conversion = session.query(FileConversions, Files)\
-        .join(Files, FileConversions.file_id == Files.id).filter(FileConversions.id==conversion_id).first()
+    conversion = session.query(FileConversions, ConversionFilesAssignments, Files)\
+        .join(ConversionFilesAssignments, FileConversions.id == ConversionFilesAssignments.conversion_id)\
+        .join(Files, ConversionFilesAssignments.file_id == Files.id).filter(FileConversions.id==conversion_id)\
+        .filter(ConversionFilesAssignments.stage == stage).first()
+
+    print(conversion)
+
+    # conversion = session.query(FileConversions, Files)\
+    #     .join(Files, FileConversions.file_id == Files.id).filter(FileConversions.id==conversion_id).first()
 
     try:
-        check = pdf_check(os.path.join(conversion[0].project_dir, stage, conversion[1].file_name))
+        check = pdf_check(os.path.join(conversion[0].project_dir, stage, conversion[2].file_name))
 
-        check_meta_assign = session.query(PDFMetadataAssignments).filter_by(conversion_file_id = conversion[0].id).first()
+        check_meta_assign = session.query(PDFMetadataAssignments).filter_by(file_id = conversion[1].file_id).first()
 
         if check_meta_assign:
 
@@ -137,8 +157,7 @@ def pdf_accessibility_check(conversion_id: int, stage: str):
 
             assignment = PDFMetadataAssignments(
                 metadata_id = metadata.id,
-                stage_folder = stage,
-                conversion_file_id = conversion[0].id
+                file_id = conversion[1].file_id
             )
 
             session.add(assignment)
@@ -162,4 +181,4 @@ def bulk_pdf_check(conversion_id: int, stage: str):
 
 
 # create_file_conversion(4)
-bulk_pdf_check(4, "source")
+# bulk_pdf_check(4, "source")

@@ -123,7 +123,6 @@ class FileConversions(Base):
 
     __tablename__ = 'file_conversions'
     id = Column(Integer, primary_key=True)
-    file_id = Column(Integer(), ForeignKey("files.id"))
     source_hierarchy = Column(String())
     conversion_req_id = Column(Integer(), ForeignKey("conversion_requests.id"))
     project_dir = Column(String())
@@ -137,6 +136,9 @@ class ConversionRequests(Base):
     comments = Column(String())
     files_imported = Column(Boolean())
     import_folder = Column(String())
+
+
+
 
 class PDFMetadata(Base):
 
@@ -157,10 +159,9 @@ class PDFMetadataAssignments(Base):
 
     __tablename__ = 'pdf_metadata_assignment'
     id = Column(Integer, primary_key=True)
-    source_file_id = Column(Integer(), ForeignKey("files.id"))
-    conversion_file_id = Column(Integer(), ForeignKey("file_conversions.id"))
+    file_id = Column(Integer(), ForeignKey("files.id"))
     metadata_id = Column(Integer(), ForeignKey("pdf_metadata.id"))
-    stage_folder = Column(String())
+
 
 
 #
