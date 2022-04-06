@@ -138,8 +138,6 @@ class ConversionRequests(Base):
     import_folder = Column(String())
 
 
-
-
 class PDFMetadata(Base):
 
     __tablename__ = 'pdf_metadata'
@@ -162,6 +160,72 @@ class PDFMetadataAssignments(Base):
     file_id = Column(Integer(), ForeignKey("files.id"))
     metadata_id = Column(Integer(), ForeignKey("pdf_metadata.id"))
 
+
+class SourceStageViewPDF(Base):
+
+    __tablename__ = 'source_stage_pdf'
+    is_tagged = Column(Boolean())
+    text_type = Column(Integer())
+    total_figures = Column(Integer())
+    total_alt_tags = Column(Integer())
+    title_set = Column(Boolean())
+    lang_set = Column(Boolean())
+    number_of_pages = Column(Integer())
+    stage = Column(String())
+    source_hierarchy = Column(String())
+    conversion_id = Column(Integer(), primary_key=True)
+    file_name = Column(String())
+    file_location = Column(String())
+    file_hash = Column(String())
+    file_id = Column(Integer())
+    file_type = Column(String())
+    origin_requester_id = Column(Integer())
+    requester_id = Column(Integer())
+
+
+
+class ActiveStageViewPDF(Base):
+
+    __tablename__ = 'active_stage_pdf'
+    is_tagged = Column(Boolean())
+    text_type = Column(Integer())
+    total_figures = Column(Integer())
+    total_alt_tags = Column(Integer())
+    title_set = Column(Boolean())
+    lang_set = Column(Boolean())
+    number_of_pages = Column(Integer())
+    stage = Column(String())
+    source_hierarchy = Column(String())
+    conversion_id = Column(Integer(), primary_key=True)
+    file_name = Column(String())
+    file_location = Column(String())
+    file_hash = Column(String())
+    file_id = Column(Integer())
+    file_type = Column(String())
+    origin_requester_id = Column(Integer())
+    requester_id = Column(Integer())
+
+
+class CompleteStageViewPDF(Base):
+
+    __tablename__ = 'complete_stage_pdf'
+    is_tagged = Column(Boolean())
+    text_type = Column(Integer())
+    total_figures = Column(Integer())
+    total_alt_tags = Column(Integer())
+    title_set = Column(Boolean())
+    lang_set = Column(Boolean())
+    number_of_pages = Column(Integer())
+    stage = Column(String())
+    source_hierarchy = Column(String())
+    conversion_id = Column(Integer(), primary_key=True)
+    file_name = Column(String())
+    file_location = Column(String())
+    file_hash = Column(String())
+    file_id = Column(Integer())
+    file_type = Column(String())
+    origin_requester_id = Column(Integer())
+    requester_id = Column(Integer())
 
 
 #

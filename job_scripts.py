@@ -2,7 +2,9 @@
 import sys, os
 import shutil
 from accessConnection import get_session,\
-    Files, Videos, ConversionRequests, FileConversions, PDFMetadata, PDFMetadataAssignments, ConversionFilesAssignments
+    Files, Videos, ConversionRequests, FileConversions,\
+    PDFMetadata, PDFMetadataAssignments, ConversionFilesAssignments,\
+    SourceStageViewPDF, CompleteStageViewPDF, ActiveStageViewPDF
 from pdfValidation import pdf_status, check_if_tagged, check_for_alt_tags, pdf_check
 import hashlib
 sys.path.append(r"C:\Users\913678186\IdeaProjects\Moodle_Scraper_V3")
@@ -88,7 +90,7 @@ def create_file_conversion(request_id: int):
     session.close()
 
 
-def start_file_conversion(file_conversion_id: int):
+def start_pdf_file_conversion(file_conversion_id: int):
 
     """
     Moves files into Active Directory and creates DB entries.
@@ -96,7 +98,89 @@ def start_file_conversion(file_conversion_id: int):
     :return:
     """
     session = get_session()
-    request = session.query(ConversionRequests).filter_by(id=file_conversion_id).first()
+    request = session.query(SourceStageViewPDF).filter_by(conversion_id=file_conversion_id).first()
+    if not os.path.isdir(os.path.join(project_files_dir, request.file_hash, "active")):
+        os.mkdir(os.path.join(project_files_dir, request.file_hash, "active"))
+
+    if not os.path.isfile(os.path.join(project_files_dir, request.file_hash, 'active', request.file_name)):
+
+        shutil.copyfile(request.file_location,
+                        os.path.join(project_files_dir, request.file_hash, 'active', request.file_name))
+
+    record_exists = session.query(ActiveStageViewPDF).filter_by(file_hash=request.file_hash).first()
+
+    if record_exists:
+        return record_exists.file_id
+
+    new_file = Files(
+        file_hash=request.file_hash,
+        file_name=request.file_name,
+        file_location= os.path.join(project_files_dir, request.file_hash, 'active', request.file_name),
+        file_type=request.file_type,
+        origin_requester_id = request.origin_requester_id
+
+    )
+
+    session.add(new_file)
+    session.flush()
+    new_file_id = new_file.id
+    assignment = ConversionFilesAssignments(
+
+        conversion_id=request.conversion_id,
+        file_id=new_file.id,
+        stage="active",
+    )
+    session.add(assignment)
+
+    session.commit()
+    session.close()
+
+    return new_file_id
+
+
+def finalize_pdf_file_conversion(file_conversion_id: int):
+    session = get_session()
+    request = session.query(ActiveStageViewPDF).filter_by(conversion_id=file_conversion_id).first()
+
+    if not os.path.isdir(os.path.join(project_files_dir, request.file_hash, "complete")):
+        os.mkdir(os.path.join(project_files_dir, request.file_hash, "complete"))
+
+    if not os.path.isfile(os.path.join(project_files_dir, request.file_hash, 'complete', request.file_name)):
+
+        shutil.copyfile(request.file_location,
+                        os.path.join(project_files_dir, request.file_hash, 'complete', request.file_name))
+
+    record_exists = session.query(CompleteStageViewPDF).filter_by(file_hash=request.file_hash).first()
+
+    if record_exists:
+        return record_exists.file_id
+
+    new_file = Files(
+        file_hash=request.file_hash,
+        file_name=request.file_name,
+        file_location= os.path.join(project_files_dir, request.file_hash, 'complete', request.file_name),
+        file_type=request.file_type,
+        origin_requester_id = request.origin_requester_id
+
+    )
+
+    session.add(new_file)
+    session.flush()
+    new_file_id = new_file.id
+    assignment = ConversionFilesAssignments(
+
+        conversion_id=request.conversion_id,
+        file_id=new_file.id,
+        stage="complete",
+    )
+    session.add(assignment)
+
+    session.commit()
+    session.close()
+
+    return new_file_id
+
+
 
 
 
@@ -110,8 +194,6 @@ def pdf_accessibility_check(conversion_id: int, stage: str):
         .join(Files, ConversionFilesAssignments.file_id == Files.id).filter(FileConversions.id==conversion_id)\
         .filter(ConversionFilesAssignments.stage == stage).first()
 
-    print(conversion)
-
     # conversion = session.query(FileConversions, Files)\
     #     .join(Files, FileConversions.file_id == Files.id).filter(FileConversions.id==conversion_id).first()
 
@@ -123,9 +205,6 @@ def pdf_accessibility_check(conversion_id: int, stage: str):
         if check_meta_assign:
 
             existing_meta_record = session.query(PDFMetadata).filter_by(id=check_meta_assign.metadata_id).first()
-
-            print(conversion[0].id, "UPDATING")
-
             existing_meta_record.is_tagged = check['tagged']
             existing_meta_record.text_type = check['pdf_text_type']
             existing_meta_record.total_figures = len(check['alt_tag_count'])
@@ -167,18 +246,27 @@ def pdf_accessibility_check(conversion_id: int, stage: str):
         print("No Access")
 
 
-def bulk_pdf_check(conversion_id: int, stage: str):
+def bulk_pdf_check(requester_id: int, stage: str):
 
     if stage not in ["source", "active", "complete"]:
         raise Exception("Allowed Stages are: source, active, complete")
 
-
     session = get_session()
-    conversions = session.query(FileConversions).filter_by(conversion_req_id = conversion_id).all()
+
+    if stage == "source":
+        conversions = session.query(SourceStageViewPDF).filter_by(requester_id=requester_id).all()
+
+    if stage == "active":
+        conversions = session.query(ActiveStageViewPDF).filter_by(requester_id=requester_id).all()
+        print(conversions)
+
+    if stage == "complete":
+        conversions = session.query(CompleteStageViewPDF).filter_by(requester_id=requester_id).all()
 
     for conversion in conversions:
-        pdf_accessibility_check(conversion.id, stage)
+        pdf_accessibility_check(conversion.conversion_id, stage)
 
 
-# create_file_conversion(4)
-# bulk_pdf_check(4, "source")
+# create_file_conversion(5)
+# bulk_pdf_check(5, "source")
+# pdf_accessibility_check(844, "active")

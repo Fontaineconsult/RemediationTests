@@ -27,11 +27,14 @@ def clean_filename(name: str):
     name = name.lstrip()
     return name
 
+    # ("OL-StrategiesSuccess", "collab", "2152", 3),
+    # ("PHIL 101.01", "standard", "18241", 1),
+    # ("E_ED 0786-07", "standard", "14719", 2),
+
 pages = [
 
-        ("OL-StrategiesSuccess", "collab", "2152", 3),
-         ("PHIL 101.01", "standard", "18241", 1),
-         ("E_ED 0786-07", "standard", "14719", 2)
+
+        ("AAS 510 Temp Shell", "collab", "2191", 5)
 ]
 
 
