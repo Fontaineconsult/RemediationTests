@@ -65,7 +65,6 @@ def create_file_conversion(request_id: int):
             source_path = os.path.normpath(file.file_location).split("\\")[3:-1]
             source_hierachy = os.path.join(*source_path)
 
-
             if file.file_type == ".pdf":
 
                 fileconversion=FileConversions(
@@ -266,6 +265,17 @@ def bulk_pdf_check(requester_id: int, stage: str):
     for conversion in conversions:
         pdf_accessibility_check(conversion.conversion_id, stage)
 
+
+
+def send_to_abby_server(conversion_id:int):
+
+    session = get_session()
+    request = session.query(ActiveStageViewPDF).filter_by(conversion_id=conversion_id).first()
+    print(request)
+
+
+
+send_to_abby_server(852)
 
 # create_file_conversion(5)
 # bulk_pdf_check(5, "source")

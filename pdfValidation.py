@@ -1,4 +1,5 @@
 from pdfminer import high_level
+from pdfminer.layout import LTImage
 import pdfminer
 from pikepdf import Pdf, Dictionary, Array, String, Object, Name
 
@@ -18,12 +19,16 @@ def image_over_text(page):
     for item in list(page):
 
         if isinstance(item, pdfminer.layout.LTFigure):
-            variance = ((item.x1 - item.x0) * (item.y1 - item.y0)) / ((page.x1 - page.x0) * (page.y1 - page.y0))
-
-            if 0.9 < variance < 1.1:  # Check to see if the size of the text image is the same as the page
-                return True
-            else:
-                continue
+            check = False
+            for pdf_object in item._objs:
+                if isinstance(pdf_object, LTImage):
+                    check = True
+                if check:
+                    variance = ((item.x1 - item.x0) * (item.y1 - item.y0)) / ((page.x1 - page.x0) * (page.y1 - page.y0))
+                    if 0.9 < variance < 1.1:  # Check to see if the size of the text image is the same as the page
+                        return True
+                    else:
+                        continue
         continue
     return False
 
@@ -244,3 +249,5 @@ def pdf_check(location):
 # print(pdf_check(r"Z:\ACRS\project_files\1f2b9c41f10c0dcbc69ffe9adc6c03ee55bba87c70fe687213c4ebccb56284ff\source\Blooms Taxonomy for Teaching Lesson Design.pdf"))
 # print(pdf_check(r"Z:\ACRS\project_files\8b8999c25661c10085d0ababe7050af301ebc78f9dbb03edeeab187db0424aca\source\EdTPA Making Good Choices 21-22.pdf"))
 # print(pdf_check(r"Z:\ACRS\project_files\fdf547da4d49ff8410276d99cbece4cd9b6afe2dd5f2636bcb7dd2357f933e1b\source\Ladder-of-Inference-Overview.pdf"))
+# print(pdf_check(r"Z:\ACRS\project_files\958ec82c340f47c94c8788e4adbbcebf74a3fb160b94f312b0fc09ef8540bafe\active\Ethnic mobilization among Korean dry cleaners (1).pdf"))
+print(pdf_check(r"Z:\ACRS\project_files\3ffb2bf96f546d787e7e2c79ef4b81882ab05baf5ced7f31987e434c5125a889\active\2007_Donna DiGiuseppe.pdf"))
