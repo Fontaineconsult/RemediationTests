@@ -4,7 +4,7 @@ from zipfile import ZipFile
 
 
 
-doc = ZipFile(r"C:\Users\913678186\Downloads\companyprofile-problemstatement-3.docx")
+doc = ZipFile(r"Z:\ACRS\Requests\AAS 510 Temp Shell\Resources for Faculty (Hidden from Student View)\SyllabiComplianceChecklist.docx")
 doc_xml = doc.read('word/document.xml')
 test = doc.open('word/document.xml')
 print(type(test))

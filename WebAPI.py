@@ -19,42 +19,68 @@ serviceUrl = 'http://localhost:8081/FineReaderServer14/WebService.asmx'
 serverLocation = 'localhost'
 
 # The name of the workflow to use
-workflowName = 'Default Workflow'
+workflowName = 'MainWorkFlow'
 
 # The path to the input file to process
 filePath = "..\\..\\..\\..\\SampleImages\\sample.tif"
 
 # The path to the directory in which output files will be saved
 outputDirPath = ".\\Output"
-
 ########### Create server client from WSDL using zeep module ############
 
 client = zeep.Client(wsdl=serviceUrl + '?wsdl')
 
-########### Connect to server and print version information ############
 
-majorVersion = client.service.GetVersion()
-releaseVersion = client.service.GetReleaseVersion()
-print("Connected to ABBYY FineReader Server %d Release %d" % (majorVersion, releaseVersion))
 
-########### Get a list of available workflows and verify that workflowName is among them ##############
+def create_abbyy_job(filePath):
 
-workflows = client.service.GetWorkflows(serverLocation)
+    dirPath, fileName = os.path.split(filePath)
 
-if workflows.count == 0:
-    raise Exception("No workflows available")
+    with open(filePath, "rb") as inputFile:
+        fileContents = inputFile.read()
 
-print("Available workflows:")
-for workflow in workflows:
-    print("  %s" % workflow)
+    fileContainer = {
+        'FileContents': fileContents,
+        'FileName': fileName
+    }
+    jobId = client.service.StartProcessFile(serverLocation, workflowName, fileContainer)
 
-if not workflowName in workflows:
-    raise Exception("Workflow \"%s\" not found" % (workflowName))
+    return jobId
 
-print("Using workflow: %s" % (workflowName))
 
-########### Start file processing ##############
+def check_abbyy_job_status(job_id):
 
+    stateInfo = client.service.GetJobStateInfo(serverLocation, job_id)
+    return stateInfo
+
+def get_abbyy_job_result(jobId):
+
+
+    jobResult = client.service.GetJobResultEx(serverLocation, jobId, None, ['DoNotDeleteJob'])
+    print(jobResult)
+
+
+get_abbyy_job_result("{CFD57D54-2641-4AF3-B2DD-D9108F187D22}")
+
+#
+# ########### Get a list of available workflows and verify that workflowName is among them ##############
+#
+# workflows = client.service.GetWorkflows(serverLocation)
+#
+# if workflows.count == 0:
+#     raise Exception("No workflows available")
+#
+# print("Available workflows:")
+# for workflow in workflows:
+#     print("  %s" % workflow)
+#
+# if not workflowName in workflows:
+#     raise Exception("Workflow \"%s\" not found" % (workflowName))
+#
+# print("Using workflow: %s" % (workflowName))
+#
+# ########### Start file processing ##############
+#
 # dirPath, fileName = os.path.split(filePath)
 # print("Starting processing of \"%s\"" %(fileName))
 #
@@ -69,46 +95,42 @@ print("Using workflow: %s" % (workflowName))
 # jobId = client.service.StartProcessFile(serverLocation, workflowName, fileContainer)
 #
 # print("Processing started, jobId = %s" %(jobId))
-
-########### Query job state and wait until it is processed ##############
-
-print("Waiting until job is processed:")
-
-
-
-
+#
+# ########### Query job state and wait until it is processed ##############
+#
+# print("Waiting until job is processed:")
+#
 # while True:
 #     time.sleep(1)
-#     stateInfo = client.service.GetJobStateInfo(serverLocation, "{F1602E34-323B-41CF-A261-10A318C51B17}")
-#     file = client.service.XmlTicket()
+#     stateInfo = client.service.GetJobStateInfo(serverLocation, jobId)
 #     if stateInfo.State == 'JS_Complete':
 #         print("  Job complete")
 #         break
 #     elif stateInfo.State == 'JS_NoSuchJob':
-#         raise Exception("Job \"%s\" not found" % ("{F1602E34-323B-41CF-A261-10A318C51B17}"))
+#         raise Exception("Job \"%s\" not found" % (jobId))
 #     else:
 #         print("  Job state is %s, %d%% complete" %(stateInfo.State, stateInfo.Progress))
-
+#
 ########### Retrieve job result and print warnings and errors ##############
 
 # If you do not specify DoNotDeleteJob flag you won't be able to retrieve job result
 # the second time for the same job (this must be needed in case the first call
 # fails due to network problem)
 # If you do specify this flag, you must delete the job manually after you're done with it
-jobResult = client.service.GetJobResultEx(serverLocation, "{F1602E34-323B-41CF-A261-10A318C51B17}", None, ['DoNotDeleteJob'])
-
-if jobResult.IsFailed:
-    print("Processing failed")
-else:
-    print("Processing succeeded")
-
-if jobResult.Messages != None:
-    print("Messages: ")
-    for message in jobResult.Messages.JobMessage:
-        print("  %s: %s" % (message.Type, message.UnicodeStr))
-
-########### Save output files ##############
-
+# jobResult = client.service.GetJobResultEx(serverLocation, jobId, None, ['DoNotDeleteJob'])
+#
+# if jobResult.IsFailed:
+#     print("Processing failed")
+# else:
+#     print("Processing succeeded")
+#
+# if jobResult.Messages != None:
+#     print("Messages: ")
+#     for message in jobResult.Messages.JobMessage:
+#         print("  %s: %s" % (message.Type, message.UnicodeStr))
+# #
+# ########### Save output files ##############
+#
 # def saveFileContainer(fileContainer, dirPath):
 #     with open(os.path.join(dirPath, fileContainer.FileName), "wb") as outputFile:
 #         outputFile.write(fileContainer.FileContents)
@@ -156,6 +178,6 @@ if jobResult.Messages != None:
 # ########### Delete the job manually ##############
 #
 # client.service.DeleteJob(serverLocation, jobId)
-print("Job and files deleted")
-
-print("Successfully finished")
+# print("Job and files deleted")
+#
+# print("Successfully finished")

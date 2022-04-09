@@ -20,6 +20,7 @@ if workflows.Count == 0:
     raise Exception("No workflows available")
 
 print("Available workflows:")
+
 workflowFound = False
 for i in range(0, workflows.Count):
     print("    %s" % (workflows.Item(i)))

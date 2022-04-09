@@ -4,8 +4,10 @@ import shutil
 from accessConnection import get_session,\
     Files, Videos, ConversionRequests, FileConversions,\
     PDFMetadata, PDFMetadataAssignments, ConversionFilesAssignments,\
-    SourceStageViewPDF, CompleteStageViewPDF, ActiveStageViewPDF
+    SourceStageViewPDF, CompleteStageViewPDF, ActiveStageViewPDF, AbbyyServerJobs
 from pdfValidation import pdf_status, check_if_tagged, check_for_alt_tags, pdf_check
+from WebAPI import create_abbyy_job, check_abbyy_job_status
+
 import hashlib
 sys.path.append(r"C:\Users\913678186\IdeaProjects\Moodle_Scraper_V3")
 sys.path.append(r"C:\Users\DanielPC\Desktop\Moodle_Scraper_V3")
@@ -271,11 +273,44 @@ def send_to_abby_server(conversion_id:int):
 
     session = get_session()
     request = session.query(ActiveStageViewPDF).filter_by(conversion_id=conversion_id).first()
-    print(request)
+    job_id = create_abbyy_job(request.file_location)
+
+    abbyJob = AbbyyServerJobs(
+        jobId = job_id,
+        file_id = request.file_id,
+        state = "first_init"
+
+    )
+    session.add(abbyJob)
+    server_job_id = abbyJob.id
+    file_id = request.file_id
+    session.commit()
+    update_abbyy_job_status(file_id)
+
+    return server_job_id
 
 
 
-send_to_abby_server(852)
+
+def update_abbyy_job_status(file_id):
+    session = get_session()
+    abbyyJob = session.query(AbbyyServerJobs).filter_by(file_id=file_id).first()
+    if abbyyJob:
+        status = check_abbyy_job_status(abbyyJob.jobId)
+        abbyyJob.state = status['State']
+        abbyyJob.progress = status['Progress']
+        session.commit()
+    else:
+        print("NO ID FOUND")
+
+
+def get_abbyy_job_result():
+
+
+
+
+# send_to_abby_server(852)
+update_abbyy_job_status(852)
 
 # create_file_conversion(5)
 # bulk_pdf_check(5, "source")

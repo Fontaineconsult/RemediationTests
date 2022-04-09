@@ -49,7 +49,7 @@ class AbbyyServerJobs(Base):
     jobId = Column(String(50))
     file_id = Column(Integer, ForeignKey("files.id"))
     state = Column(String(50))
-
+    progress = Column(Integer())
 
 class Videos(Base):
 
