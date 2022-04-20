@@ -53,14 +53,18 @@ def check_abbyy_job_status(job_id):
     stateInfo = client.service.GetJobStateInfo(serverLocation, job_id)
     return stateInfo
 
-def get_abbyy_job_result(jobId):
+def get_abbyy_job_result(abbyy_jobId):
+
+    jobResult = client.service.GetJobResultEx(serverLocation, abbyy_jobId, None, ['DoNotDeleteJob'])
+    print(jobResult['JobDocuments']['JobDocument'][0]['OutputDocuments']['OutputDocument'][0]['Files']['FileContainer'][0])
+    return jobResult['JobDocuments']['JobDocument'][0]['OutputDocuments']['OutputDocument'][0]['Files']['FileContainer'][0]
 
 
-    jobResult = client.service.GetJobResultEx(serverLocation, jobId, None, ['DoNotDeleteJob'])
-    print(jobResult)
+def save_job_file(fileContainer, dirPath):
+    with open(os.path.join(dirPath, fileContainer.FileName), "wb") as outputFile:
+        outputFile.write(fileContainer.FileContents)
 
 
-get_abbyy_job_result("{CFD57D54-2641-4AF3-B2DD-D9108F187D22}")
 
 #
 # ########### Get a list of available workflows and verify that workflowName is among them ##############

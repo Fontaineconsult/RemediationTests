@@ -44,9 +44,9 @@ class BoxAssociations(Base):
 
 class AbbyyServerJobs(Base):
 
-    __tablename__ = 'abbyyServerJobs'
+    __tablename__ = 'abbyyserverjobs'
     id = Column(Integer, primary_key=True)
-    jobId = Column(String(50))
+    abbyy_job_id = Column(String(50))
     file_id = Column(Integer, ForeignKey("files.id"))
     state = Column(String(50))
     progress = Column(Integer())

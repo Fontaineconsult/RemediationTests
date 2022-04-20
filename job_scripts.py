@@ -6,7 +6,7 @@ from accessConnection import get_session,\
     PDFMetadata, PDFMetadataAssignments, ConversionFilesAssignments,\
     SourceStageViewPDF, CompleteStageViewPDF, ActiveStageViewPDF, AbbyyServerJobs
 from pdfValidation import pdf_status, check_if_tagged, check_for_alt_tags, pdf_check
-from WebAPI import create_abbyy_job, check_abbyy_job_status
+from WebAPI import create_abbyy_job, check_abbyy_job_status, get_abbyy_job_result, save_job_file
 
 import hashlib
 sys.path.append(r"C:\Users\913678186\IdeaProjects\Moodle_Scraper_V3")
@@ -304,13 +304,27 @@ def update_abbyy_job_status(file_id):
         print("NO ID FOUND")
 
 
-def get_abbyy_job_result():
+def replace_old_file_with_abbyy_file(abbyy_job_id, file_location):
+    abbyy_file = get_abbyy_job_result(abbyy_job_id)
+    session = get_session()
+    record = session.query(ActiveStageViewPDF).filter_by(file_location=file_location).first()
+    file_location = os.path.split(file_location)[0]
+    save_job_file(abbyy_file, file_location)
 
 
+    print(file_location)
+
+    print("DSFSDF",record)
+    file = session.query(Files).filter_by(id=record.file_id).first()
+    print("ZZZZZZ", file)
+    file.file_location = os.path.join(file_location, abbyy_file.FileName)
+    session.commit()
+
+replace_old_file_with_abbyy_file("{CFD57D54-2641-4AF3-B2DD-D9108F187D22}", r"Z:\ACRS\project_files\21d84e435c4ceee24482f4db21dfd89e10268fe6fb5fa0815a93a3dae6096d8c\active\2007_Claudia Lang.pdf")
 
 
 # send_to_abby_server(852)
-update_abbyy_job_status(852)
+# update_abbyy_job_status(1245)
 
 # create_file_conversion(5)
 # bulk_pdf_check(5, "source")

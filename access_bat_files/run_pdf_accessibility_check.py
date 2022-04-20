@@ -2,6 +2,7 @@ import sys, os
 
 
 def run():
+    print("SDKLFGHSDLKFJSDLKFJLSKDJFLKSDJFLKSDJFLKDSMVLKDMSV")
     pdf_accessibility_check(int(sys.argv[1]), sys.argv[2])
 
 
