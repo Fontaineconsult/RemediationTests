@@ -127,6 +127,7 @@ class FileConversions(Base):
     conversion_req_id = Column(Integer(), ForeignKey("conversion_requests.id"))
     project_dir = Column(String())
     file_type = Column(String())
+    finalized = Column(Boolean(), default=False)
 
 class ConversionRequests(Base):
 
@@ -134,7 +135,7 @@ class ConversionRequests(Base):
     id = Column(Integer, primary_key=True)
     conversion_requester = Column(Integer(), ForeignKey("conversion_requester.id"))
     comments = Column(String())
-    files_imported = Column(Boolean())
+    files_imported = Column(Boolean(), default=False)
     import_folder = Column(String())
 
 
@@ -143,15 +144,16 @@ class PDFMetadata(Base):
     __tablename__ = 'pdf_metadata'
     id = Column(Integer, primary_key=True)
     file_id = Column(Integer(), ForeignKey("files.id"))
-    is_tagged = Column(Boolean())
+    is_tagged = Column(Boolean(), default=False)
     text_type = Column(Integer())
     total_figures = Column(Integer())
     total_alt_tags = Column(Integer())
-    has_doc_desc = Column(Boolean())
+    has_doc_desc = Column(Boolean(), default=False)
     stage_folder = Column(String())
-    title_set = Column(Boolean())
-    lang_set = Column(Boolean())
+    title_set = Column(Boolean(), default=False)
+    lang_set = Column(Boolean(), default=False)
     number_of_pages = Column(Integer())
+    headings_pass = Column(Boolean(), default=False)
 
 class PDFMetadataAssignments(Base):
 

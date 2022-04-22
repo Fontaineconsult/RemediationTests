@@ -5,7 +5,7 @@ from accessConnection import get_session,\
     Files, Videos, ConversionRequests, FileConversions,\
     PDFMetadata, PDFMetadataAssignments, ConversionFilesAssignments,\
     SourceStageViewPDF, CompleteStageViewPDF, ActiveStageViewPDF, AbbyyServerJobs
-from pdfValidation import pdf_status, check_if_tagged, check_for_alt_tags, pdf_check
+from pdfValidation import pdf_check
 from WebAPI import create_abbyy_job, check_abbyy_job_status, get_abbyy_job_result, save_job_file
 
 import hashlib
@@ -14,9 +14,7 @@ sys.path.append(r"C:\Users\DanielPC\Desktop\Moodle_Scraper_V3")
 
 hasher = hashlib.sha256()
 
-from content_scaffolds.file import ContentFile
-from core_classes.iLearnPage import iLearnPage
-from network.session_manager import MoodleSession
+
 
 download_dir = r"Z:\ACRS\Requests"
 project_files_dir = r"Z:\ACRS\project_files"
@@ -73,6 +71,7 @@ def create_file_conversion(request_id: int):
                     conversion_req_id=request.id,
                     source_hierarchy=source_hierachy,
                     project_dir=os.path.join(project_files_dir, file.file_hash),
+                    finalized=False
 
                 )
                 session.add(fileconversion)
@@ -130,6 +129,7 @@ def start_pdf_file_conversion(file_conversion_id: int):
         conversion_id=request.conversion_id,
         file_id=new_file.id,
         stage="active",
+
     )
     session.add(assignment)
 
@@ -137,6 +137,7 @@ def start_pdf_file_conversion(file_conversion_id: int):
     session.close()
 
     return new_file_id
+
 
 
 def finalize_pdf_file_conversion(file_conversion_id: int):
@@ -154,7 +155,16 @@ def finalize_pdf_file_conversion(file_conversion_id: int):
     record_exists = session.query(CompleteStageViewPDF).filter_by(file_hash=request.file_hash).first()
 
     if record_exists:
-        return record_exists.file_id
+        print("EXISTS")
+        finalize = session.query(FileConversions).filter_by(id=file_conversion_id).first()
+        print(finalize)
+        existing_file_id = record_exists.file_id
+        if finalize:
+            print("FINALIZED", finalize.project_dir, finalize.finalized)
+            finalize.finalized = True
+            session.commit()
+            session.close()
+        return existing_file_id
 
     new_file = Files(
         file_hash=request.file_hash,
@@ -176,9 +186,13 @@ def finalize_pdf_file_conversion(file_conversion_id: int):
     )
     session.add(assignment)
 
+    finalize = session.query(FileConversions).filter_by(id=file_conversion_id).first()
+
+    if finalize:
+        finalize.finalized = True
+
     session.commit()
     session.close()
-
     return new_file_id
 
 
@@ -199,52 +213,59 @@ def pdf_accessibility_check(conversion_id: int, stage: str):
     #     .join(Files, FileConversions.file_id == Files.id).filter(FileConversions.id==conversion_id).first()
 
     try:
-        check = pdf_check(os.path.join(conversion[0].project_dir, stage, conversion[2].file_name))
+        check = pdf_check(os.path.join(conversion[2].file_location))
+        if check:
+            print(check)
+            check_meta_assign = session.query(PDFMetadataAssignments).filter_by(file_id = conversion[1].file_id).first()
 
-        check_meta_assign = session.query(PDFMetadataAssignments).filter_by(file_id = conversion[1].file_id).first()
+            if check_meta_assign:
+                print("CHECK")
+                update_abbyy_job_status(conversion[1].file_id)
+                existing_meta_record = session.query(PDFMetadata).filter_by(id=check_meta_assign.metadata_id).first()
+                existing_meta_record.is_tagged = check['tagged']
+                existing_meta_record.text_type = check['pdf_text_type']
+                existing_meta_record.total_figures = len(check['alt_tag_count'])
+                existing_meta_record.total_alt_tags = len([True for x in check['alt_tag_count'] if x is True])
+                existing_meta_record.stage_folder = "source"
+                existing_meta_record.title_set = check['metadata']['title']
+                existing_meta_record.lang_set = check['metadata']['language']
+                existing_meta_record.number_of_pages= check['doc_data']['pages']
+                existing_meta_record.headings_pass = check['headings_pass']
 
-        if check_meta_assign:
+                session.commit()
 
-            existing_meta_record = session.query(PDFMetadata).filter_by(id=check_meta_assign.metadata_id).first()
-            existing_meta_record.is_tagged = check['tagged']
-            existing_meta_record.text_type = check['pdf_text_type']
-            existing_meta_record.total_figures = len(check['alt_tag_count'])
-            existing_meta_record.total_alt_tags = len([True for x in check['alt_tag_count'] if x is True])
-            existing_meta_record.stage_folder = "source"
-            existing_meta_record.title_set = check['metadata']['title']
-            existing_meta_record.lang_set = check['metadata']['language']
-            existing_meta_record.number_of_pages=check['doc_data']['pages']
+            else:
 
-            session.commit()
+                metadata = PDFMetadata(
+                    is_tagged=check['tagged'],
+                    text_type=check['pdf_text_type'],
+                    total_figures=len(check['alt_tag_count']),
+                    total_alt_tags=len([True for x in check['alt_tag_count'] if x is True]),
+                    stage_folder="source",
+                    title_set=check['metadata']['title'],
+                    lang_set=check['metadata']['language'],
+                    number_of_pages=check['doc_data']['pages'],
+                    headings_pass=check['headings_pass']
 
-        else:
+                )
 
-            metadata = PDFMetadata(
-                is_tagged=check['tagged'],
-                text_type=check['pdf_text_type'],
-                total_figures=len(check['alt_tag_count']),
-                total_alt_tags=len([True for x in check['alt_tag_count'] if x is True]),
-                stage_folder="source",
-                title_set=check['metadata']['title'],
-                lang_set=check['metadata']['language'],
-                number_of_pages=check['doc_data']['pages']
+                session.add(metadata)
+                session.flush()
+                session.refresh(metadata)
 
-            )
-
-            session.add(metadata)
-            session.flush()
-            session.refresh(metadata)
-
-            assignment = PDFMetadataAssignments(
-                metadata_id = metadata.id,
-                file_id = conversion[1].file_id
-            )
-
-            session.add(assignment)
-            session.commit()
+                assignment = PDFMetadataAssignments(
+                    metadata_id = metadata.id,
+                    file_id = conversion[1].file_id
+                )
+                print("CHECK")
+                update_abbyy_job_status(conversion[1].file_id)
+                session.add(assignment)
+                session.commit()
 
     except PermissionError:
         print("No Access")
+
+
 
 
 def bulk_pdf_check(requester_id: int, stage: str):
@@ -273,22 +294,35 @@ def send_to_abby_server(conversion_id:int):
 
     session = get_session()
     request = session.query(ActiveStageViewPDF).filter_by(conversion_id=conversion_id).first()
-    job_id = create_abbyy_job(request.file_location)
 
-    abbyJob = AbbyyServerJobs(
-        jobId = job_id,
-        file_id = request.file_id,
-        state = "first_init"
+    file_exists = session.query(AbbyyServerJobs).filter_by(file_id=request.file_id).first()
 
-    )
-    session.add(abbyJob)
-    server_job_id = abbyJob.id
-    file_id = request.file_id
-    session.commit()
-    update_abbyy_job_status(file_id)
+    if file_exists:
 
-    return server_job_id
+        job_id = create_abbyy_job(request.file_location)
+        file_exists.abbyy_job_id = job_id
+        file_exists.state = "first_init"
+        update_abbyy_job_status(request.file_id)
+        session.commit()
 
+        return job_id
+
+    else:
+
+        job_id = create_abbyy_job(request.file_location)
+        abbyJob = AbbyyServerJobs(
+            abbyy_job_id = job_id,
+            file_id = request.file_id,
+            state = "first_init"
+
+        )
+        session.add(abbyJob)
+        server_job_id = abbyJob.id
+        file_id = request.file_id
+        session.commit()
+        update_abbyy_job_status(file_id)
+        session.close()
+        return server_job_id
 
 
 
@@ -296,10 +330,13 @@ def update_abbyy_job_status(file_id):
     session = get_session()
     abbyyJob = session.query(AbbyyServerJobs).filter_by(file_id=file_id).first()
     if abbyyJob:
-        status = check_abbyy_job_status(abbyyJob.jobId)
+        print("check_status")
+        status = check_abbyy_job_status(abbyyJob.abbyy_job_id)
+        print(status)
         abbyyJob.state = status['State']
         abbyyJob.progress = status['Progress']
         session.commit()
+        session.close()
     else:
         print("NO ID FOUND")
 
@@ -310,17 +347,33 @@ def replace_old_file_with_abbyy_file(abbyy_job_id, file_location):
     record = session.query(ActiveStageViewPDF).filter_by(file_location=file_location).first()
     file_location = os.path.split(file_location)[0]
     save_job_file(abbyy_file, file_location)
-
-
     print(file_location)
-
-    print("DSFSDF",record)
     file = session.query(Files).filter_by(id=record.file_id).first()
-    print("ZZZZZZ", file)
     file.file_location = os.path.join(file_location, abbyy_file.FileName)
     session.commit()
+    session.close()
 
-replace_old_file_with_abbyy_file("{CFD57D54-2641-4AF3-B2DD-D9108F187D22}", r"Z:\ACRS\project_files\21d84e435c4ceee24482f4db21dfd89e10268fe6fb5fa0815a93a3dae6096d8c\active\2007_Claudia Lang.pdf")
+
+def deactivate_active_job(conversion_id):
+    session = get_session()
+    conversion_assignment = session.query(ConversionFilesAssignments)\
+        .filter(ConversionFilesAssignments.conversion_id == conversion_id,
+                ConversionFilesAssignments.stage == "active").first()
+    print(conversion_assignment)
+    if conversion_assignment:
+        session.delete(conversion_assignment)
+        session.commit()
+
+
+
+
+# deactivate_active_job(988)
+
+
+
+
+
+# replace_old_file_with_abbyy_file("{CFD57D54-2641-4AF3-B2DD-D9108F187D22}", r"Z:\ACRS\project_files\21d84e435c4ceee24482f4db21dfd89e10268fe6fb5fa0815a93a3dae6096d8c\active\2007_Claudia Lang.pdf")
 
 
 # send_to_abby_server(852)

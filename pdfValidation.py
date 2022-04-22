@@ -1,7 +1,8 @@
+import pikepdf
 from pdfminer import high_level
 from pdfminer.layout import LTImage
 import pdfminer
-from pikepdf import Pdf, Dictionary, Array, String, Object, Name
+from pikepdf import Pdf, Dictionary, Array, String, Object, Name, PdfError
 
 
 
@@ -90,9 +91,6 @@ def check_if_tagged(document):
 
 
 def check_for_alt_tags(document):
-
-
-
 
     root = document.Root.get("/StructTreeRoot")
     roleMap = root.get("/RoleMap")
@@ -192,6 +190,62 @@ def check_for_alt_tags(document):
     return document_photos
 
 
+def verify_headings(document):
+
+    root = document.Root.get("/StructTreeRoot")
+    headings = []
+
+    headings_map = {
+        pikepdf.Name("/H1"): 1,
+        pikepdf.Name("/H2"): 2,
+        pikepdf.Name("/H3"): 3,
+        pikepdf.Name("/H4"): 4,
+        pikepdf.Name("/H5"): 5,
+        pikepdf.Name("/H6"): 6,
+
+    }
+
+    def recurse_k_nodes(node):
+
+        if isinstance(node, Dictionary):
+            if "/K" in node.keys():
+                recurse_k_nodes(node.get('/K'))
+        if isinstance(node, Array):
+            for each in node:
+                if isinstance(each, Dictionary):
+                    if "/K" in each.keys():
+                        recurse_k_nodes(each.get("/K"))
+                    if "/S" in each.keys():
+                        if each.get("/S") in headings_map.keys():
+                            headings.append(headings_map[each.get("/S")])
+
+
+                if isinstance(each, Array):
+                    recurse_k_nodes(each)
+
+    recurse_k_nodes(root)
+
+
+    # Matterhorn 14-001, 14-002, 14-003
+
+    if len(headings) == 0:
+        return False
+
+    if len(headings) > 0:
+        if headings[0] != 1:
+            return False
+
+    for i, h in enumerate(headings):
+        if i + 1 == len(headings):
+            break
+        if (headings[i + 1] - h) > 1:
+            print(headings[i + 1] - i)
+            return False
+
+    return True
+
+
+
 def check_metadata(document):
 
     meta = {
@@ -217,32 +271,33 @@ def get_doc_data(document):
 
 
 
-
-# check_metadata(r"Z:\ACRS\Requests\E_ED 0786-07\Math Resources\Learning About Rulers and Measuring.pdf")
-# check_metadata(r"Z:\ACRS\Requests\E_ED 0786-07\Math Resources\Learning Geometry-  Some Insights Drawn from Teacher Writing.pdf")
-
-
 def pdf_check(location):
+    try:
+        Pikepdf = Pdf.open(location)
 
-    Pikepdf = Pdf.open(location)
+        tagged = check_if_tagged(Pikepdf)
+        if tagged:
+            alt_tag_count = check_for_alt_tags(Pikepdf)
+        else:
+            alt_tag_count = []
+        pdf_text_type = pdf_status(location)
 
-    tagged = check_if_tagged(Pikepdf)
-    if tagged:
-        alt_tag_count = check_for_alt_tags(Pikepdf)
-    else:
-        alt_tag_count = []
-    pdf_text_type = pdf_status(location)
+        obj = {
 
-    obj = {
+            "tagged": bool(tagged),
+            "alt_tag_count": alt_tag_count,
+            "pdf_text_type": pdf_text_type,
+            "metadata": check_metadata(Pikepdf),
+            "doc_data": get_doc_data(Pikepdf),
+            "headings_pass": verify_headings(Pikepdf)
 
-        "tagged": bool(tagged),
-        "alt_tag_count": alt_tag_count,
-        "pdf_text_type": pdf_text_type,
-        "metadata": check_metadata(Pikepdf),
-        "doc_data": get_doc_data(Pikepdf),
+        }
+        return obj
+    except PdfError:
+        print("PDF READ ERROR")
+        return None
 
-    }
-    return obj
+
 
 
 # print(pdf_check(r"Z:\ACRS\project_files\ae37b2abbe4bd48244c604f602464fdca6563f8c6378e53e27430d55b8638fd5\source\EDD 786-07 Sp22 Syllabus.pdf"))
