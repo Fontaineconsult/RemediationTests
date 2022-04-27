@@ -34,8 +34,6 @@ def create_file_conversion(request_id: int):
     print(request)
     files = session.query(Files).filter_by(origin_requester_id = request.conversion_requester).all()
 
-    videos = session.query(Videos).filter_by(origin_requester_id = request.conversion_requester).all()
-
     for file in files:
         print(file)
         if not os.path.isdir(os.path.join(project_files_dir, file.file_hash)):
@@ -75,9 +73,7 @@ def create_file_conversion(request_id: int):
 
                 )
                 session.add(fileconversion)
-
                 session.flush()
-
                 assignment = ConversionFilesAssignments(
 
                     conversion_id=fileconversion.id,
@@ -85,8 +81,31 @@ def create_file_conversion(request_id: int):
                     stage="source",
                 )
                 session.add(assignment)
-
                 session.commit()
+
+            if file.file_type == '.docx' or file.file_type == '.doc':
+
+                fileconversion=FileConversions(
+                    conversion_req_id=request.id,
+                    source_hierarchy=source_hierachy,
+                    project_dir=os.path.join(project_files_dir, file.file_hash),
+                    finalized=False
+
+                )
+                session.add(fileconversion)
+                session.flush()
+                assignment = ConversionFilesAssignments(
+
+                    conversion_id=fileconversion.id,
+                    file_id=new_file.id,
+                    stage="source",
+                )
+                session.add(assignment)
+                session.commit()
+
+
+
+
     session.close()
 
 
@@ -99,46 +118,50 @@ def start_pdf_file_conversion(file_conversion_id: int):
     """
     session = get_session()
     request = session.query(SourceStageViewPDF).filter_by(conversion_id=file_conversion_id).first()
-    if not os.path.isdir(os.path.join(project_files_dir, request.file_hash, "active")):
-        os.mkdir(os.path.join(project_files_dir, request.file_hash, "active"))
 
-    if not os.path.isfile(os.path.join(project_files_dir, request.file_hash, 'active', request.file_name)):
+    if request:
 
-        shutil.copyfile(request.file_location,
-                        os.path.join(project_files_dir, request.file_hash, 'active', request.file_name))
+        if not os.path.isdir(os.path.join(project_files_dir, request.file_hash, "active")):
+            os.mkdir(os.path.join(project_files_dir, request.file_hash, "active"))
 
-    record_exists = session.query(ActiveStageViewPDF).filter_by(file_hash=request.file_hash).first()
+        if not os.path.isfile(os.path.join(project_files_dir, request.file_hash, 'active', request.file_name)):
 
-    if record_exists:
-        return record_exists.file_id
+            shutil.copyfile(request.file_location,
+                            os.path.join(project_files_dir, request.file_hash, 'active', request.file_name))
 
-    new_file = Files(
-        file_hash=request.file_hash,
-        file_name=request.file_name,
-        file_location= os.path.join(project_files_dir, request.file_hash, 'active', request.file_name),
-        file_type=request.file_type,
-        origin_requester_id = request.origin_requester_id
+        record_exists = session.query(ActiveStageViewPDF).filter_by(file_hash=request.file_hash).first()
 
-    )
+        if record_exists:
+            return record_exists.file_id
 
-    session.add(new_file)
-    session.flush()
-    new_file_id = new_file.id
-    assignment = ConversionFilesAssignments(
+        new_file = Files(
+            file_hash=request.file_hash,
+            file_name=request.file_name,
+            file_location= os.path.join(project_files_dir, request.file_hash, 'active', request.file_name),
+            file_type=request.file_type,
+            origin_requester_id = request.origin_requester_id
 
-        conversion_id=request.conversion_id,
-        file_id=new_file.id,
-        stage="active",
+        )
 
-    )
-    session.add(assignment)
+        session.add(new_file)
+        session.flush()
+        new_file_id = new_file.id
+        assignment = ConversionFilesAssignments(
 
-    session.commit()
-    session.close()
+            conversion_id=request.conversion_id,
+            file_id=new_file.id,
+            stage="active",
 
-    return new_file_id
+        )
+        session.add(assignment)
 
+        session.commit()
+        session.close()
 
+        return new_file_id
+
+    else:
+        print("No Item Found")
 
 def finalize_pdf_file_conversion(file_conversion_id: int):
     session = get_session()
@@ -360,9 +383,16 @@ def deactivate_active_job(conversion_id):
         .filter(ConversionFilesAssignments.conversion_id == conversion_id,
                 ConversionFilesAssignments.stage == "active").first()
     print(conversion_assignment)
+
+
+
     if conversion_assignment:
-        session.delete(conversion_assignment)
-        session.commit()
+        file = session.query(Files).filter_by(file_id=conversion_assignment.file_id).first()
+        if file:
+
+            os.remove(file.file_location)
+            session.delete(conversion_assignment)
+            session.commit()
 
 
 

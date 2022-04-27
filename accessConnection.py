@@ -128,6 +128,7 @@ class FileConversions(Base):
     project_dir = Column(String())
     file_type = Column(String())
     finalized = Column(Boolean(), default=False)
+    comments = Column(String())
 
 class ConversionRequests(Base):
 
@@ -154,6 +155,7 @@ class PDFMetadata(Base):
     lang_set = Column(Boolean(), default=False)
     number_of_pages = Column(Integer())
     headings_pass = Column(Boolean(), default=False)
+    has_bookmarks = Column(Boolean(), default=False)
 
 class PDFMetadataAssignments(Base):
 

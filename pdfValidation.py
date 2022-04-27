@@ -2,8 +2,8 @@ import pikepdf
 from pdfminer import high_level
 from pdfminer.layout import LTImage
 import pdfminer
-from pikepdf import Pdf, Dictionary, Array, String, Object, Name, PdfError
-
+from pikepdf import Pdf, Dictionary, Array, String, Object, Name, PdfError, OutlineItem
+import re
 
 
 def page_contains_text(page):
@@ -239,7 +239,6 @@ def verify_headings(document):
         if i + 1 == len(headings):
             break
         if (headings[i + 1] - h) > 1:
-            print(headings[i + 1] - i)
             return False
 
     return True
@@ -269,11 +268,88 @@ def get_doc_data(document):
     return doc_data
 
 
+def check_bookmarks(document):
+
+    if len(document.open_outline()) > 0:
+        return True
+    else:
+        return False
+
+
+def add_bookmarks_from_headings(Pikepdf):
+
+    root = Pikepdf.Root.get("/StructTreeRoot")
+    parent_tree = root.get("/ParentTree")
+
+    def recurse_k_nodes(node):
+
+        if isinstance(node, Dictionary):
+            if "/K" in node.keys():
+
+                recurse_k_nodes(node.get('/K'))
+        if isinstance(node, Array):
+
+            for each in node:
+
+                if isinstance(each, Dictionary):
+                    if "/K" in each.keys():
+
+                        recurse_k_nodes(each.get("/K"))
+
+                    if "/S" in each.keys():
+
+                        if each.get("/S") in ["/H1", "/H2", "/H3", "/H4", "/H5", "/H6"]:
+
+                            mcid = each.get("/K")
+                            page_bytes = each.get('/Pg').get("/Contents").read_bytes()
+                            # Get Bookmark Position
+                            raw_location_re = f"<</MCID {mcid} >>BDC\s(.*?)(Tm|Td)"
+                            mcid_re = re.compile(raw_location_re, flags=re.DOTALL)
+                            location_string = re.search(mcid_re, page_bytes.decode('utf-8'))
+                            x = location_string.group().split()[-3]
+                            y = location_string.group().split()[-2]
+
+                            # Get Bookmark Title
+                            raw_title_re = f"<</MCID {mcid} >>BDC(.*?)EMC"
+                            title_re = re.compile(raw_title_re, flags=re.DOTALL)
+                            title_string = re.search(title_re, page_bytes.decode('utf-8'))
+                            in_paren = False
+                            output = []
+                            for position, char in enumerate(title_string.group()):
+                                if char == "(":
+                                    in_paren = True
+                                    continue
+                                if char == ")":
+                                    in_paren = False
+                                    continue
+                                if in_paren is True:
+                                    output.append(char)
+                            bookmark_title = "".join(output)
+
+                            for page_number, page in enumerate(Pikepdf.Root.Pages.Kids):
+                                if page == each.get("/Pg"):
+                                    print("OUTLINE")
+                                    with Pikepdf.open_outline() as outline:
+                                        oi = OutlineItem(bookmark_title, page_number, "XYZ", left=int(float(x)),
+                                                         top=int(float(y)))
+                                        outline.root.append(oi)
+
+                if isinstance(each, Array):
+                    recurse_k_nodes(each)
+
+    if "/PDFDocEncoding" in Pikepdf.Root.AcroForm.DR.Encoding.keys():
+        if isinstance(Pikepdf.Root.Pages.Kids, Array):
+            recurse_k_nodes(parent_tree.get("/Nums"))
+        else:
+            print("Page stored as Dict")
+    else:
+        print("Encoding Not Supported for Bookmarks")
 
 
 def pdf_check(location):
+
     try:
-        Pikepdf = Pdf.open(location)
+        Pikepdf = Pdf.open(location, allow_overwriting_input=True)
 
         tagged = check_if_tagged(Pikepdf)
         if tagged:
@@ -282,6 +358,11 @@ def pdf_check(location):
             alt_tag_count = []
         pdf_text_type = pdf_status(location)
 
+        if verify_headings(Pikepdf):
+            if not check_bookmarks(Pikepdf):
+                add_bookmarks_from_headings(Pikepdf)
+
+
         obj = {
 
             "tagged": bool(tagged),
@@ -289,9 +370,12 @@ def pdf_check(location):
             "pdf_text_type": pdf_text_type,
             "metadata": check_metadata(Pikepdf),
             "doc_data": get_doc_data(Pikepdf),
-            "headings_pass": verify_headings(Pikepdf)
+            "headings_pass": verify_headings(Pikepdf),
+            "has_bookmarks": check_bookmarks(Pikepdf)
 
         }
+        Pikepdf.save()
+        Pikepdf.close()
         return obj
     except PdfError:
         print("PDF READ ERROR")
@@ -299,6 +383,18 @@ def pdf_check(location):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+# add_bookmarks_from_headings(r"Z:\ACRS\project_files\9db1d83d8e959cbc71ccaca4a28db798d1edb6be0bee2d28a6a2a2a00451b0bc\active\Michael_Hephner_The_EndofanEra.pdf")
 
 # print(pdf_check(r"Z:\ACRS\project_files\ae37b2abbe4bd48244c604f602464fdca6563f8c6378e53e27430d55b8638fd5\source\EDD 786-07 Sp22 Syllabus.pdf"))
 # print(pdf_check(r"Z:\ACRS\project_files\1f2b9c41f10c0dcbc69ffe9adc6c03ee55bba87c70fe687213c4ebccb56284ff\source\Blooms Taxonomy for Teaching Lesson Design.pdf"))
