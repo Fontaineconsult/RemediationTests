@@ -6,6 +6,7 @@ from pikepdf import Pdf, Dictionary, Array, String, Object, Name, PdfError, Outl
 import re
 
 
+
 def page_contains_text(page):
     if page.groups is None:
         return False
@@ -88,8 +89,6 @@ def check_if_tagged(document):
             return False
 
 
-
-
 def check_for_alt_tags(document):
 
     root = document.Root.get("/StructTreeRoot")
@@ -169,7 +168,7 @@ def check_for_alt_tags(document):
         if isinstance(node, Array):
             for each in node:
                 if isinstance(each, Dictionary):
-                    print((each.keys()))
+                    # print((each.keys()))
                     if "/K" in each.keys():
                         recurse_k_nodes(each.get("/K"))
 
@@ -217,18 +216,20 @@ def verify_headings(document):
                         recurse_k_nodes(each.get("/K"))
                     if "/S" in each.keys():
                         if each.get("/S") in headings_map.keys():
-                            headings.append(headings_map[each.get("/S")])
 
+                            headings.append(headings_map[each.get("/S")])
 
                 if isinstance(each, Array):
                     recurse_k_nodes(each)
 
     recurse_k_nodes(root)
 
-
     # Matterhorn 14-001, 14-002, 14-003
-
+    print("Headings Map", headings)
     if len(headings) == 0:
+        return False
+
+    if len(list(filter(lambda n: n == 1, headings))) > 1:  # greater than 1 H1 heading
         return False
 
     if len(headings) > 0:
@@ -244,6 +245,61 @@ def verify_headings(document):
     return True
 
 
+
+def normalize_headings(document):
+
+    root = document.Root.get("/StructTreeRoot")
+    headings = []
+    headings_map = {
+        pikepdf.Name("/H1"): 1,
+        pikepdf.Name("/H2"): 2,
+        pikepdf.Name("/H3"): 3,
+        pikepdf.Name("/H4"): 4,
+        pikepdf.Name("/H5"): 5,
+        pikepdf.Name("/H6"): 6,
+
+    }
+
+    def find_group(start_index):
+        pass
+
+    def recurse_k_nodes(node):
+
+            if isinstance(node, Dictionary):
+                if "/K" in node.keys():
+                    recurse_k_nodes(node.get('/K'))
+            if isinstance(node, Array):
+                for each in node:
+                    if isinstance(each, Dictionary):
+                        if "/K" in each.keys():
+                            recurse_k_nodes(each.get("/K"))
+                        if "/S" in each.keys():
+
+                            if each.get("/S") in headings_map.keys():
+
+                                if len(headings) == 0:
+                                    if each.get("/S") != "/H1":
+                                        each["/S"] = Name("/H1")
+                                        headings.append(headings_map[each.get("/S")])
+
+                                else:
+
+                                    if len(headings) == 1:
+                                        print(headings)
+                                        if headings_map[each.get("/S")] - headings[0] > 1:
+                                            each["/S"] = headings[0] + 1
+                                            headings.append(each["/S"])
+                                    else:
+                                        if headings_map[each.get("/S")] - headings[-1] > 1:
+                                            each["/S"] = headings[-1] + 1
+                                            headings.append(each["/S"])
+
+                    if isinstance(each, Array):
+                        recurse_k_nodes(each)
+
+
+    recurse_k_nodes(root)
+    print(headings)
 
 def check_metadata(document):
 
@@ -269,18 +325,49 @@ def get_doc_data(document):
 
 
 def check_bookmarks(document):
-
-    if len(document.open_outline()) > 0:
-        return True
+    if check_if_tagged(document):
+        outlines = document.Root.get("/Outlines")
+        # print(repr(outlines))
+        if outlines:
+            if outlines.get("/Count"):
+                if outlines.get("/Count") > 0:
+                    return True
+                else:
+                    return False
+            else:
+                if outlines.get("/First"):
+                    return True
+                else:
+                    return False
+        else:
+            return False
     else:
         return False
+
+
+def _get_page_number_of_page(page_obj: Object, document: Pdf):
+
+    count = 0
+
+    for each in list(document.Root.Pages.Kids):
+
+        if each.get("/Type") == "/Pages":
+            for page in each.get("/Kids"):
+                count += 1
+                if page == page_obj:
+                    return count
+
+        else:
+            count += 1
+            if each == page_obj:
+                return count
 
 
 def add_bookmarks_from_headings(Pikepdf):
 
     root = Pikepdf.Root.get("/StructTreeRoot")
     parent_tree = root.get("/ParentTree")
-
+    # print(repr(Pikepdf.Root))
     def recurse_k_nodes(node):
 
         if isinstance(node, Dictionary):
@@ -300,14 +387,23 @@ def add_bookmarks_from_headings(Pikepdf):
 
                         if each.get("/S") in ["/H1", "/H2", "/H3", "/H4", "/H5", "/H6"]:
 
+                            # if each.get("/S") == "/H1":
+                            #     print(repr(each.get('/Pg')))
+
                             mcid = each.get("/K")
+
                             page_bytes = each.get('/Pg').get("/Contents").read_bytes()
+                            # print(page_bytes)
                             # Get Bookmark Position
                             raw_location_re = f"<</MCID {mcid} >>BDC\s(.*?)(Tm|Td)"
                             mcid_re = re.compile(raw_location_re, flags=re.DOTALL)
                             location_string = re.search(mcid_re, page_bytes.decode('utf-8'))
-                            x = location_string.group().split()[-3]
-                            y = location_string.group().split()[-2]
+                            if location_string is not None:
+                                x = location_string.group().split()[-3]
+                                y = location_string.group().split()[-2]
+                            else:
+                                print("Failed to find bookmark data")
+                                continue
 
                             # Get Bookmark Title
                             raw_title_re = f"<</MCID {mcid} >>BDC(.*?)EMC"
@@ -325,43 +421,37 @@ def add_bookmarks_from_headings(Pikepdf):
                                 if in_paren is True:
                                     output.append(char)
                             bookmark_title = "".join(output)
+                            page_number = _get_page_number_of_page(each.get("/Pg"), Pikepdf)
 
-                            for page_number, page in enumerate(Pikepdf.Root.Pages.Kids):
-                                if page == each.get("/Pg"):
-                                    print("OUTLINE")
-                                    with Pikepdf.open_outline() as outline:
-                                        oi = OutlineItem(bookmark_title, page_number, "XYZ", left=int(float(x)),
-                                                         top=int(float(y)))
-                                        outline.root.append(oi)
+                            with Pikepdf.open_outline() as outline:
+                                oi = OutlineItem(bookmark_title, page_number - 1, "XYZ", left=int(float(x)),
+                                                 top=int(float(y)))
+                                outline.root.append(oi)
 
                 if isinstance(each, Array):
                     recurse_k_nodes(each)
-
-    if "/PDFDocEncoding" in Pikepdf.Root.AcroForm.DR.Encoding.keys():
-        if isinstance(Pikepdf.Root.Pages.Kids, Array):
-            recurse_k_nodes(parent_tree.get("/Nums"))
+    if Pikepdf.Root.get("/AcroForm"):
+        if "/PDFDocEncoding" in Pikepdf.Root.AcroForm.DR.Encoding.keys():
+            if isinstance(Pikepdf.Root.Pages.Kids, Array):
+                print("Adding Bookmarks")
+                recurse_k_nodes(parent_tree.get("/Nums"))
+            else:
+                print("Page stored as Dict")
         else:
-            print("Page stored as Dict")
+            print("Encoding Not Supported for Bookmarks")
     else:
-        print("Encoding Not Supported for Bookmarks")
-
+        recurse_k_nodes(parent_tree.get("/Nums"))
 
 def pdf_check(location):
 
     try:
         Pikepdf = Pdf.open(location, allow_overwriting_input=True)
-
         tagged = check_if_tagged(Pikepdf)
         if tagged:
             alt_tag_count = check_for_alt_tags(Pikepdf)
         else:
             alt_tag_count = []
         pdf_text_type = pdf_status(location)
-
-        if verify_headings(Pikepdf):
-            if not check_bookmarks(Pikepdf):
-                add_bookmarks_from_headings(Pikepdf)
-
 
         obj = {
 
@@ -374,27 +464,43 @@ def pdf_check(location):
             "has_bookmarks": check_bookmarks(Pikepdf)
 
         }
-        Pikepdf.save()
+    except PdfError as e:
+        print("PDF READ ERROR", e)
+        return None
+
+    try:
+        # Pikepdf.save()
         Pikepdf.close()
         return obj
-    except PdfError:
-        print("PDF READ ERROR")
+    except PdfError as e:
+        print("PDF WRITE ERROR", e)
+        return None
+
+
+
+def repair_pdf(location):
+
+    try:
+        Pikepdf = Pdf.open(location, allow_overwriting_input=True)
+        normalize_headings(Pikepdf)
+
+
+    except PdfError as e:
+        print("PDF WRITE ERROR", e)
         return None
 
 
 
 
+print(pdf_check(r"Z:\ACRS\project_files\3ffb2bf96f546d787e7e2c79ef4b81882ab05baf5ced7f31987e434c5125a889\active\2007_Donna DiGiuseppe.pdf"))
+repair_pdf(r"Z:\ACRS\project_files\3ffb2bf96f546d787e7e2c79ef4b81882ab05baf5ced7f31987e434c5125a889\active\2007_Donna DiGiuseppe.pdf")
+#
+# add_bookmarks_from_headings(Pdf.open((r"Z:\ACRS\project_files\c0cb15bb4e996f17b129c54bd471b73c98b7b8a84b81f42c4aa8e01267a5981a\active\Desi Land California Here We Come .pdf")))
 
 
+# add_bookmarks_from_headings(Pdf.open(r"Z:\ACRS\project_files\3ea4787285280c99a204416fe8204e6423607115ec5ab22632cd516349f73c76\active\Malcolm_Mafi_Crisis.pdf"))
 
 
-
-
-
-
-
-
-# add_bookmarks_from_headings(r"Z:\ACRS\project_files\9db1d83d8e959cbc71ccaca4a28db798d1edb6be0bee2d28a6a2a2a00451b0bc\active\Michael_Hephner_The_EndofanEra.pdf")
 
 # print(pdf_check(r"Z:\ACRS\project_files\ae37b2abbe4bd48244c604f602464fdca6563f8c6378e53e27430d55b8638fd5\source\EDD 786-07 Sp22 Syllabus.pdf"))
 # print(pdf_check(r"Z:\ACRS\project_files\1f2b9c41f10c0dcbc69ffe9adc6c03ee55bba87c70fe687213c4ebccb56284ff\source\Blooms Taxonomy for Teaching Lesson Design.pdf"))

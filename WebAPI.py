@@ -61,7 +61,7 @@ def get_abbyy_job_result(abbyy_jobId):
 
 
 def save_job_file(fileContainer, dirPath):
-    with open(os.path.join(dirPath, fileContainer.FileName), "wb") as outputFile:
+    with open(dirPath, "wb") as outputFile:
         outputFile.write(fileContainer.FileContents)
 
 

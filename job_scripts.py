@@ -254,7 +254,7 @@ def pdf_accessibility_check(conversion_id: int, stage: str):
                 existing_meta_record.lang_set = check['metadata']['language']
                 existing_meta_record.number_of_pages= check['doc_data']['pages']
                 existing_meta_record.headings_pass = check['headings_pass']
-
+                existing_meta_record.has_bookmarks = check['has_bookmarks']
                 session.commit()
 
             else:
@@ -268,7 +268,8 @@ def pdf_accessibility_check(conversion_id: int, stage: str):
                     title_set=check['metadata']['title'],
                     lang_set=check['metadata']['language'],
                     number_of_pages=check['doc_data']['pages'],
-                    headings_pass=check['headings_pass']
+                    headings_pass=check['headings_pass'],
+                    has_bookmarks=check['has_bookmarks']
 
                 )
 
@@ -368,11 +369,13 @@ def replace_old_file_with_abbyy_file(abbyy_job_id, file_location):
     abbyy_file = get_abbyy_job_result(abbyy_job_id)
     session = get_session()
     record = session.query(ActiveStageViewPDF).filter_by(file_location=file_location).first()
-    file_location = os.path.split(file_location)[0]
+    print("SDDSF", file_location)
+    # file_location_new = os.path.split(file_location)[0]
     save_job_file(abbyy_file, file_location)
-    print(file_location)
+
+
     file = session.query(Files).filter_by(id=record.file_id).first()
-    file.file_location = os.path.join(file_location, abbyy_file.FileName)
+    file.file_location = file_location
     session.commit()
     session.close()
 
