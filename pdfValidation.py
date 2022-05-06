@@ -192,6 +192,7 @@ def check_for_alt_tags(document):
 def verify_headings(document):
 
     root = document.Root.get("/StructTreeRoot")
+    print(repr(root))
     headings = []
 
     headings_map = {
@@ -215,6 +216,7 @@ def verify_headings(document):
                     if "/K" in each.keys():
                         recurse_k_nodes(each.get("/K"))
                     if "/S" in each.keys():
+                        print(each.get("/S"))
                         if each.get("/S") in headings_map.keys():
 
                             headings.append(headings_map[each.get("/S")])
@@ -245,61 +247,6 @@ def verify_headings(document):
     return True
 
 
-
-def normalize_headings(document):
-
-    root = document.Root.get("/StructTreeRoot")
-    headings = []
-    headings_map = {
-        pikepdf.Name("/H1"): 1,
-        pikepdf.Name("/H2"): 2,
-        pikepdf.Name("/H3"): 3,
-        pikepdf.Name("/H4"): 4,
-        pikepdf.Name("/H5"): 5,
-        pikepdf.Name("/H6"): 6,
-
-    }
-
-    def find_group(start_index):
-        pass
-
-    def recurse_k_nodes(node):
-
-            if isinstance(node, Dictionary):
-                if "/K" in node.keys():
-                    recurse_k_nodes(node.get('/K'))
-            if isinstance(node, Array):
-                for each in node:
-                    if isinstance(each, Dictionary):
-                        if "/K" in each.keys():
-                            recurse_k_nodes(each.get("/K"))
-                        if "/S" in each.keys():
-
-                            if each.get("/S") in headings_map.keys():
-
-                                if len(headings) == 0:
-                                    if each.get("/S") != "/H1":
-                                        each["/S"] = Name("/H1")
-                                        headings.append(headings_map[each.get("/S")])
-
-                                else:
-
-                                    if len(headings) == 1:
-                                        print(headings)
-                                        if headings_map[each.get("/S")] - headings[0] > 1:
-                                            each["/S"] = headings[0] + 1
-                                            headings.append(each["/S"])
-                                    else:
-                                        if headings_map[each.get("/S")] - headings[-1] > 1:
-                                            each["/S"] = headings[-1] + 1
-                                            headings.append(each["/S"])
-
-                    if isinstance(each, Array):
-                        recurse_k_nodes(each)
-
-
-    recurse_k_nodes(root)
-    print(headings)
 
 def check_metadata(document):
 
@@ -478,22 +425,10 @@ def pdf_check(location):
 
 
 
-def repair_pdf(location):
-
-    try:
-        Pikepdf = Pdf.open(location, allow_overwriting_input=True)
-        normalize_headings(Pikepdf)
 
 
-    except PdfError as e:
-        print("PDF WRITE ERROR", e)
-        return None
+# print(pdf_check(r"Z:\ACRS\project_files\3ffb2bf96f546d787e7e2c79ef4b81882ab05baf5ced7f31987e434c5125a889\active\2007_Donna DiGiuseppe.pdf"))
 
-
-
-
-print(pdf_check(r"Z:\ACRS\project_files\3ffb2bf96f546d787e7e2c79ef4b81882ab05baf5ced7f31987e434c5125a889\active\2007_Donna DiGiuseppe.pdf"))
-repair_pdf(r"Z:\ACRS\project_files\3ffb2bf96f546d787e7e2c79ef4b81882ab05baf5ced7f31987e434c5125a889\active\2007_Donna DiGiuseppe.pdf")
 #
 # add_bookmarks_from_headings(Pdf.open((r"Z:\ACRS\project_files\c0cb15bb4e996f17b129c54bd471b73c98b7b8a84b81f42c4aa8e01267a5981a\active\Desi Land California Here We Come .pdf")))
 
