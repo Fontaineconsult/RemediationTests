@@ -103,8 +103,6 @@ def check_for_alt_tags(document):
 
     def recurse_a_node(node, parent):
 
-
-
         if isinstance(node, Dictionary):
 
 
@@ -130,19 +128,41 @@ def check_for_alt_tags(document):
 
         def check_xObject():
 
-            resources = node.get('/Pg').get("/Resources")
-            if "/XObject" in resources.keys():
-                XObject = resources.get("/XObject")
+            def check_xObject_image(iXobject):
 
-                for key in XObject.keys():
-                    if XObject[key].get("/Subtype") == "/Image":
-                        derived_id = XObject[key].get("/Height") + XObject[key].get("/Width") + XObject[key].get("/Length")
-                        IDDict[derived_id] = [key]
+                if iXobject.get("/Subtype") == "/Image":
 
-                        if "/Alt" in node.keys() and len(str(node.get('/Alt'))) > 0:
+
+                    derived_id = iXobject.get("/Height") + iXobject.get("/Width") + iXobject.get("/Length")  # uniqish id for dict
+                    print(IDDict)
+                    print(node.keys(), derived_id)
+                    if "/Alt" in node.keys() and len(str(node.get('/Alt'))) > 0:
+                        print(str(node.get('/Alt')))
+                        IDDict[derived_id] = True
+                    else:
+                        if derived_id in IDDict and IDDict[derived_id] is True:
                             IDDict[derived_id] = True
                         else:
                             IDDict[derived_id] = False
+
+            try:
+                resources = node.get('/Pg').get("/Resources")
+                # print("RESOURCES", repr(resources))
+                if "/XObject" in resources.keys():
+                    XObject = resources.get("/XObject")
+                    for key in XObject.keys():
+
+                        if re.match(re.compile("/Fm\d|/P\d"), key):  # form Xobject?
+                            fxobject_resources = XObject[key].get("/Resources")
+                            if "/XObject" in fxobject_resources.keys():
+                                for xobject_key in fxobject_resources["/XObject"]:
+                                    if re.match(re.compile("/Im\d"), xobject_key):  # image Xobject?
+                                        print("HEEREEEE", xobject_key)
+                                        check_xObject_image(fxobject_resources["/XObject"][xobject_key])
+            except AttributeError:
+                print(repr(node.get('/Pg')))
+
+
 
         if roleMap is not None and len(roleMap.keys()) > 0:
             try:
@@ -153,6 +173,7 @@ def check_for_alt_tags(document):
                     check_xObject()
         else:
             if node.get('/S') == Name("/Figure"):
+
                 check_xObject()
 
     def recurse_k_nodes(node):
@@ -192,7 +213,7 @@ def check_for_alt_tags(document):
 def verify_headings(document):
 
     root = document.Root.get("/StructTreeRoot")
-    print(repr(root))
+    # print(repr(root))
     headings = []
 
     headings_map = {
@@ -292,103 +313,6 @@ def check_bookmarks(document):
         return False
 
 
-def _get_page_number_of_page(page_obj: Object, document: Pdf):
-
-    count = 0
-
-    for each in list(document.Root.Pages.Kids):
-
-        if each.get("/Type") == "/Pages":
-            for page in each.get("/Kids"):
-                count += 1
-                if page == page_obj:
-                    return count
-
-        else:
-            count += 1
-            if each == page_obj:
-                return count
-
-
-def add_bookmarks_from_headings(Pikepdf):
-
-    root = Pikepdf.Root.get("/StructTreeRoot")
-    parent_tree = root.get("/ParentTree")
-    # print(repr(Pikepdf.Root))
-    def recurse_k_nodes(node):
-
-        if isinstance(node, Dictionary):
-            if "/K" in node.keys():
-
-                recurse_k_nodes(node.get('/K'))
-        if isinstance(node, Array):
-
-            for each in node:
-
-                if isinstance(each, Dictionary):
-                    if "/K" in each.keys():
-
-                        recurse_k_nodes(each.get("/K"))
-
-                    if "/S" in each.keys():
-
-                        if each.get("/S") in ["/H1", "/H2", "/H3", "/H4", "/H5", "/H6"]:
-
-                            # if each.get("/S") == "/H1":
-                            #     print(repr(each.get('/Pg')))
-
-                            mcid = each.get("/K")
-
-                            page_bytes = each.get('/Pg').get("/Contents").read_bytes()
-                            # print(page_bytes)
-                            # Get Bookmark Position
-                            raw_location_re = f"<</MCID {mcid} >>BDC\s(.*?)(Tm|Td)"
-                            mcid_re = re.compile(raw_location_re, flags=re.DOTALL)
-                            location_string = re.search(mcid_re, page_bytes.decode('utf-8'))
-                            if location_string is not None:
-                                x = location_string.group().split()[-3]
-                                y = location_string.group().split()[-2]
-                            else:
-                                print("Failed to find bookmark data")
-                                continue
-
-                            # Get Bookmark Title
-                            raw_title_re = f"<</MCID {mcid} >>BDC(.*?)EMC"
-                            title_re = re.compile(raw_title_re, flags=re.DOTALL)
-                            title_string = re.search(title_re, page_bytes.decode('utf-8'))
-                            in_paren = False
-                            output = []
-                            for position, char in enumerate(title_string.group()):
-                                if char == "(":
-                                    in_paren = True
-                                    continue
-                                if char == ")":
-                                    in_paren = False
-                                    continue
-                                if in_paren is True:
-                                    output.append(char)
-                            bookmark_title = "".join(output)
-                            page_number = _get_page_number_of_page(each.get("/Pg"), Pikepdf)
-
-                            with Pikepdf.open_outline() as outline:
-                                oi = OutlineItem(bookmark_title, page_number - 1, "XYZ", left=int(float(x)),
-                                                 top=int(float(y)))
-                                outline.root.append(oi)
-
-                if isinstance(each, Array):
-                    recurse_k_nodes(each)
-    if Pikepdf.Root.get("/AcroForm"):
-        if "/PDFDocEncoding" in Pikepdf.Root.AcroForm.DR.Encoding.keys():
-            if isinstance(Pikepdf.Root.Pages.Kids, Array):
-                print("Adding Bookmarks")
-                recurse_k_nodes(parent_tree.get("/Nums"))
-            else:
-                print("Page stored as Dict")
-        else:
-            print("Encoding Not Supported for Bookmarks")
-    else:
-        recurse_k_nodes(parent_tree.get("/Nums"))
-
 def pdf_check(location):
 
     try:
@@ -425,7 +349,7 @@ def pdf_check(location):
 
 
 
-
+# print(pdf_check(r"Z:\ACRS\project_files\876bdcbb33fc465b2a9c0bce5a82391bb42ffe2a5877743737eeab2c238a4ba3\active\2006_Daniel Frontino Elash.pdf"))
 
 # print(pdf_check(r"Z:\ACRS\project_files\3ffb2bf96f546d787e7e2c79ef4b81882ab05baf5ced7f31987e434c5125a889\active\2007_Donna DiGiuseppe.pdf"))
 
