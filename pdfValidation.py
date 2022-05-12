@@ -134,10 +134,10 @@ def check_for_alt_tags(document):
 
 
                     derived_id = iXobject.get("/Height") + iXobject.get("/Width") + iXobject.get("/Length")  # uniqish id for dict
-                    print(IDDict)
-                    print(node.keys(), derived_id)
+
+
                     if "/Alt" in node.keys() and len(str(node.get('/Alt'))) > 0:
-                        print(str(node.get('/Alt')))
+
                         IDDict[derived_id] = True
                     else:
                         if derived_id in IDDict and IDDict[derived_id] is True:
@@ -213,7 +213,7 @@ def check_for_alt_tags(document):
 def verify_headings(document):
 
     root = document.Root.get("/StructTreeRoot")
-    # print(repr(root))
+    print(repr(document.Root))
     headings = []
 
     headings_map = {
@@ -231,6 +231,12 @@ def verify_headings(document):
         if isinstance(node, Dictionary):
             if "/K" in node.keys():
                 recurse_k_nodes(node.get('/K'))
+                if "/S" in node.keys():
+                    print(node.get("/S"))
+                    if node.get("/S") in headings_map.keys():
+                        headings.append(headings_map[node.get("/S")])
+
+
         if isinstance(node, Array):
             for each in node:
                 if isinstance(each, Dictionary):
@@ -349,7 +355,7 @@ def pdf_check(location):
 
 
 
-# print(pdf_check(r"Z:\ACRS\project_files\876bdcbb33fc465b2a9c0bce5a82391bb42ffe2a5877743737eeab2c238a4ba3\active\2006_Daniel Frontino Elash.pdf"))
+print(pdf_check(r"Z:\ACRS\project_files\47809652311603305dc42a9501a8267c6ec41b8e665de4f0d1a42d4a1d9d0440\active\2007_Book Reviews.pdf"))
 
 # print(pdf_check(r"Z:\ACRS\project_files\3ffb2bf96f546d787e7e2c79ef4b81882ab05baf5ced7f31987e434c5125a889\active\2007_Donna DiGiuseppe.pdf"))
 

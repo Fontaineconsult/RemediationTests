@@ -2,7 +2,7 @@ from pikepdf import Pdf, Dictionary, Array, String, Object, Name, PdfError, Outl
 import pikepdf
 from pdfValidation import verify_headings
 import re
-
+import zlib
 
 headings_map = {
     pikepdf.Name("/H1"): 1,
@@ -40,72 +40,73 @@ def add_bookmarks_from_headings(Pikepdf):
     root = Pikepdf.Root.get("/StructTreeRoot")
     parent_tree = root.get("/ParentTree")
 
+
+    def check_bookmark(node):
+        if node.get("/S") in ["/H1", "/H2", "/H3", "/H4", "/H5", "/H6"]:
+
+            # if each.get("/S") == "/H1":
+            #     print(repr(each.get('/Pg')))
+            mcid = node.get("/K")
+            page_bytes = node.get('/Pg').get("/Contents").read_bytes()
+
+            # print("GGGG1", zlib.decompress(page_bytes))
+            try:
+                print("GGGG", repr(node.get('/Pg').get("/Resources").get("/Font").get("/TT0").get("/ToUnicode").read_bytes().decode('utf-8')))
+            except:
+                pass
+            # print(page_bytes)
+            # Get Bookmark Position
+            raw_location_re = f"<</MCID {mcid} >>BDC\s(.*?)(Tm|Td)"
+            mcid_re = re.compile(raw_location_re, flags=re.DOTALL)
+            location_string = re.search(mcid_re, page_bytes.decode('utf-8'))
+            if location_string is not None:
+                x = location_string.group().split()[-3]
+                y = location_string.group().split()[-2]
+                raw_title_re = f"<</MCID {mcid} >>BDC(.*?)EMC"
+                title_re = re.compile(raw_title_re, flags=re.DOTALL)
+                title_string = re.search(title_re, page_bytes.decode('utf-8'))
+                in_paren = False
+                output = []
+                for position, char in enumerate(title_string.group()):
+                    if char == "(":
+                        in_paren = True
+                        continue
+                    if char == ")":
+                        in_paren = False
+                        continue
+                    if in_paren is True:
+                        output.append(char)
+                bookmark_title = "".join(output)
+                page_number = _get_page_number_of_page(node.get("/Pg"), Pikepdf)
+
+                with Pikepdf.open_outline() as outline:
+                    oi = OutlineItem(bookmark_title, page_number - 1, "XYZ", left=int(float(x)),
+                                     top=int(float(y)))
+                    outline.root.append(oi)
+
+            else:
+                print("Failed to find bookmark data")
+
     def recurse_k_nodes(node):
 
         if isinstance(node, Dictionary):
             if "/K" in node.keys():
-
+                if "/S" in node.keys():
+                    check_bookmark(node)
                 recurse_k_nodes(node.get('/K'))
         if isinstance(node, Array):
 
             for each in node:
-
                 if isinstance(each, Dictionary):
-
                     if "/K" in each.keys():
-                        print(each.get('/Pg'))
-
                         recurse_k_nodes(each.get("/K"))
 
                     if "/S" in each.keys():
-
-                        if each.get("/S") in ["/H1", "/H2", "/H3", "/H4", "/H5", "/H6"]:
-
-                            # if each.get("/S") == "/H1":
-                            #     print(repr(each.get('/Pg')))
-
-                            mcid = each.get("/K")
-
-                            page_bytes = each.get('/Pg').get("/Contents").read_bytes()
-                            print(page_bytes)
-                            # print(page_bytes)
-                            # Get Bookmark Position
-                            raw_location_re = f"<</MCID {mcid} >>BDC\s(.*?)(Tm|Td)"
-                            mcid_re = re.compile(raw_location_re, flags=re.DOTALL)
-                            location_string = re.search(mcid_re, page_bytes.decode('utf-8'))
-                            if location_string is not None:
-                                x = location_string.group().split()[-3]
-                                y = location_string.group().split()[-2]
-                            else:
-                                print("Failed to find bookmark data")
-                                continue
-
-                            # Get Bookmark Title
-                            raw_title_re = f"<</MCID {mcid} >>BDC(.*?)EMC"
-                            title_re = re.compile(raw_title_re, flags=re.DOTALL)
-                            title_string = re.search(title_re, page_bytes.decode('utf-8'))
-                            in_paren = False
-                            output = []
-                            for position, char in enumerate(title_string.group()):
-                                if char == "(":
-                                    in_paren = True
-                                    continue
-                                if char == ")":
-                                    in_paren = False
-                                    continue
-                                if in_paren is True:
-                                    output.append(char)
-                            bookmark_title = "".join(output)
-                            page_number = _get_page_number_of_page(each.get("/Pg"), Pikepdf)
-
-                            with Pikepdf.open_outline() as outline:
-                                oi = OutlineItem(bookmark_title, page_number - 1, "XYZ", left=int(float(x)),
-                                                 top=int(float(y)))
-                                outline.root.append(oi)
+                        check_bookmark(each)
 
                 if isinstance(each, Array):
                     recurse_k_nodes(each)
-    print(repr(parent_tree))
+
     if Pikepdf.Root.get("/AcroForm"):
         if "/PDFDocEncoding" in Pikepdf.Root.AcroForm.DR.Encoding.keys():
             if isinstance(Pikepdf.Root.Pages.Kids, Array):
@@ -116,8 +117,10 @@ def add_bookmarks_from_headings(Pikepdf):
         else:
             print("Encoding Not Supported for Bookmarks")
     else:
-        recurse_k_nodes(parent_tree.get("/Kids").get("/Nums"))
-
+        try:
+            recurse_k_nodes(parent_tree.get("/Nums"))
+        except AttributeError:
+            recurse_k_nodes(parent_tree.get("/Kids").get("/Nums"))
 
 
 
@@ -128,23 +131,26 @@ def remove_all_headings(document):
     verify_headings(document)
     first_check = False
 
+
+    def check_dictionary(node):
+
+        if "/S" in node.keys():
+            if node.get("/S") in headings_map.keys():
+                print(node.get("/S"))
+                node["/S"] = Name("/Span")
+
     def recurse_k_nodes(node):
 
         if isinstance(node, Dictionary):
             if "/K" in node.keys():
+                check_dictionary(node)
                 recurse_k_nodes(node.get('/K'))
         if isinstance(node, Array):
             for each in node:
                 if isinstance(each, Dictionary):
-                    if "/K" in each.keys():
-                        recurse_k_nodes(each.get("/K"))
-                    if "/S" in each.keys():
-                        print(each.get("/S"))
-                        if each.get("/S") in headings_map.keys():
-                            print(each.get("/S"))
-
-                            each["/S"] = Name("/Span")
-
+                    check_dictionary(each)
+                    if "/K" in node.keys():
+                        recurse_k_nodes(node.get('/K'))
                 if isinstance(each, Array):
                     recurse_k_nodes(each)
 
@@ -165,6 +171,8 @@ def normalize_headings(document):
         if isinstance(node, Dictionary):
             if "/K" in node.keys():
                 recurse_k_nodes(node.get('/K'))
+
+
         if isinstance(node, Array):
             for each in node:
                 if isinstance(each, Dictionary):
@@ -202,17 +210,40 @@ def normalize_headings(document):
 
 
 
-def repair_pdf(location):
+
+class PdfRepair:
+
+    def __init__(self, location:str):
+        self.location = location
+        self.file = None
+
+    def _open(self):
+        self.file = Pdf.open(self.location, allow_overwriting_input=True)
+
+    def _finalize(self):
+        self.file.save()
+        self.file.close()
+
+    def remove_headings(self):
+        self._open()
+        remove_all_headings(self.file)
+        self._finalize()
+
+    def add_bookmarks_from_headings(self):
+        self._open()
+        add_bookmarks_from_headings(self.file)
+        self._finalize()
+
+    def normalize_headings(self):
+        self._open()
+        normalize_headings(self.file)
+        self._finalize()
 
 
-        Pikepdf = Pdf.open(location, allow_overwriting_input=True)
-        # remove_all_headings(Pikepdf)
-        add_bookmarks_from_headings(Pikepdf)
-        verify_headings(Pikepdf)
-        # Pikepdf.save()
-        Pikepdf.close()
 
 
 
+test = PdfRepair(r"Z:\ACRS\project_files\47809652311603305dc42a9501a8267c6ec41b8e665de4f0d1a42d4a1d9d0440\active\2007_Book Reviews.pdf")
+getattr(test, "add_bookmarks_from_headings")()
 
-repair_pdf(r"Z:\ACRS\project_files\876bdcbb33fc465b2a9c0bce5a82391bb42ffe2a5877743737eeab2c238a4ba3\active\2006_Daniel Frontino Elash.pdf")
+
