@@ -354,8 +354,8 @@ def pdf_check(location):
         return None
 
 
-
-print(pdf_check(r"Z:\ACRS\project_files\47809652311603305dc42a9501a8267c6ec41b8e665de4f0d1a42d4a1d9d0440\active\2007_Book Reviews.pdf"))
+#
+# print(pdf_check(r"Z:\ACRS\project_files\47809652311603305dc42a9501a8267c6ec41b8e665de4f0d1a42d4a1d9d0440\active\2007_Book Reviews.pdf"))
 
 # print(pdf_check(r"Z:\ACRS\project_files\3ffb2bf96f546d787e7e2c79ef4b81882ab05baf5ced7f31987e434c5125a889\active\2007_Donna DiGiuseppe.pdf"))
 

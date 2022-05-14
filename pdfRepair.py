@@ -1,4 +1,4 @@
-from pikepdf import Pdf, Dictionary, Array, String, Object, Name, PdfError, OutlineItem
+from pikepdf import Pdf, Dictionary, Array, String, Object, Name, PdfError, OutlineItem, NameTree
 import pikepdf
 from pdfValidation import verify_headings
 import re
@@ -44,8 +44,8 @@ def add_bookmarks_from_headings(Pikepdf):
     def check_bookmark(node):
         if node.get("/S") in ["/H1", "/H2", "/H3", "/H4", "/H5", "/H6"]:
 
-            # if each.get("/S") == "/H1":
-            #     print(repr(each.get('/Pg')))
+            if node.get("/S") == "/H1":
+                print(repr(node.get('/Pg')))
             mcid = node.get("/K")
             page_bytes = node.get('/Pg').get("/Contents").read_bytes()
 
@@ -127,30 +127,76 @@ def add_bookmarks_from_headings(Pikepdf):
 def remove_all_headings(document):
 
     root = document.Root.get("/StructTreeRoot")
-
-    verify_headings(document)
+    print(type(root))
+    # verify_headings(document)
     first_check = False
+    new_stream = []
+
+    page = document.pages[0]
+    # print(page.Contents.read_bytes())
+    # print(pikepdf.parse_content_stream(page))
+
+    # index = 0
+    # for operands, operator, in pikepdf.parse_content_stream(page):
+    #     # print(f"operator {operands}", index)
+    #     if len(operands) > 0:
+    #         # print("OP", operands, operator)
+    #         for each in operands:
+    #             if isinstance(each, Name):
+    #                 if repr(each) in headings_map:
+    #                     continue
+    #     else:
+    #         new_stream.append((operands, operator))
+    #         continue
+    #     new_stream.append((operands, operator))
+    #
+    #
+    #
+    #     index += 1
+    #
+    # print(new_stream)
+    # new_content = pikepdf.unparse_content_stream(new_stream)
+    # page.Contents = document.make_stream(new_content)
+
 
 
     def check_dictionary(node):
 
         if "/S" in node.keys():
+
             if node.get("/S") in headings_map.keys():
-                print(node.get("/S"))
-                node["/S"] = Name("/Span")
+                # print(node.get("/P").keys(), type(node))
+
+                parent = node.get("/P")
+                child = parent.get("/K")
+                if isinstance(child, Array):
+                    index = 0
+                    for each in child:
+                        if each.get("/S") in headings_map:
+                            print(repr(child.get("/S")))
+                            del child[index]
+
+
+                        # print(repr(each.get("/S")))
+                if isinstance(child, Dictionary):
+
+                    print(repr(child.get("/S")))
+
+                del node
 
     def recurse_k_nodes(node):
 
         if isinstance(node, Dictionary):
             if "/K" in node.keys():
+
                 check_dictionary(node)
                 recurse_k_nodes(node.get('/K'))
         if isinstance(node, Array):
             for each in node:
                 if isinstance(each, Dictionary):
                     check_dictionary(each)
-                    if "/K" in node.keys():
-                        recurse_k_nodes(node.get('/K'))
+                    if "/K" in each.keys():
+                        recurse_k_nodes(each.get('/K'))
                 if isinstance(each, Array):
                     recurse_k_nodes(each)
 
@@ -243,7 +289,7 @@ class PdfRepair:
 
 
 
-test = PdfRepair(r"Z:\ACRS\project_files\47809652311603305dc42a9501a8267c6ec41b8e665de4f0d1a42d4a1d9d0440\active\2007_Book Reviews.pdf")
-getattr(test, "add_bookmarks_from_headings")()
-
-
+test = PdfRepair(r"C:\Users\913678186\IdeaProjects\RemediationTests\testpdf\2007_Book Reviews.pdf")
+getattr(test, "remove_headings")()
+#
+#
