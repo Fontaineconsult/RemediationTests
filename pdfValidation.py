@@ -4,6 +4,24 @@ from pdfminer.layout import LTImage
 import pdfminer
 from pikepdf import Pdf, Dictionary, Array, String, Object, Name, PdfError, OutlineItem
 import re
+import hashlib
+
+def _get_page_number_of_page(page_obj: Object, document: Pdf):
+
+    count = 0
+
+    for each in list(document.Root.Pages.Kids):
+
+        if each.get("/Type") == "/Pages":
+            for page in each.get("/Kids"):
+                count += 1
+                if page == page_obj:
+                    return count
+
+        else:
+            count += 1
+            if each == page_obj:
+                return count
 
 
 
@@ -96,6 +114,11 @@ def check_for_alt_tags(document):
     document_photos = list()
     IDDict = {}
 
+
+
+
+
+
     if not check_if_tagged(document):
         raise Exception("PDF Not Tagged")
     # print(repr(document.Root.get("/Names")))
@@ -123,8 +146,8 @@ def check_for_alt_tags(document):
             for each in node:
                 recurse_a_node(each, parent)
 
-
     def recurse_s_node(node):
+        global images
 
         def check_xObject():
 
@@ -132,37 +155,41 @@ def check_for_alt_tags(document):
 
                 if iXobject.get("/Subtype") == "/Image":
 
+                    image_bytes = iXobject.get_raw_stream_buffer()
+                    hasher = hashlib.md5()
+                    hasher.update(image_bytes)
+                    image_hash = hasher.hexdigest()
+
 
                     derived_id = iXobject.get("/Height") + iXobject.get("/Width") + iXobject.get("/Length")  # uniqish id for dict
 
-
                     if "/Alt" in node.keys() and len(str(node.get('/Alt'))) > 0:
 
-                        IDDict[derived_id] = True
+                        IDDict[image_hash] = True
                     else:
-                        if derived_id in IDDict and IDDict[derived_id] is True:
-                            IDDict[derived_id] = True
+                        if derived_id in IDDict and IDDict[image_hash] is True:
+                            IDDict[image_hash] = True
                         else:
-                            IDDict[derived_id] = False
-
+                            IDDict[image_hash] = False
             try:
                 resources = node.get('/Pg').get("/Resources")
-                # print("RESOURCES", repr(resources))
+
                 if "/XObject" in resources.keys():
                     XObject = resources.get("/XObject")
                     for key in XObject.keys():
-
                         if re.match(re.compile("/Fm\d|/P\d"), key):  # form Xobject?
                             fxobject_resources = XObject[key].get("/Resources")
                             if "/XObject" in fxobject_resources.keys():
                                 for xobject_key in fxobject_resources["/XObject"]:
                                     if re.match(re.compile("/Im\d"), xobject_key):  # image Xobject?
-                                        print("HEEREEEE", xobject_key)
                                         check_xObject_image(fxobject_resources["/XObject"][xobject_key])
+
+                        else:
+                            # print(repr(XObject))
+                            check_xObject_image(XObject[key])
+
             except AttributeError:
                 print(repr(node.get('/Pg')))
-
-
 
         if roleMap is not None and len(roleMap.keys()) > 0:
             try:
@@ -173,7 +200,6 @@ def check_for_alt_tags(document):
                     check_xObject()
         else:
             if node.get('/S') == Name("/Figure"):
-
                 check_xObject()
 
     def recurse_k_nodes(node):
@@ -181,8 +207,8 @@ def check_for_alt_tags(document):
         if isinstance(node, Dictionary):
             if "/K" in node.keys():
                 recurse_k_nodes(node.get('/K'))
-            if "/A" in node.keys():
-                recurse_a_node(node.get("/A"), node)
+            # if "/A" in node.keys():
+            #     recurse_a_node(node.get("/A"), node)
             if "/S" in node.keys():
                 recurse_s_node(node)
 
@@ -213,7 +239,7 @@ def check_for_alt_tags(document):
 def verify_headings(document):
 
     root = document.Root.get("/StructTreeRoot")
-    print(repr(document.Root))
+
     headings = []
 
     headings_map = {
@@ -232,7 +258,6 @@ def verify_headings(document):
             if "/K" in node.keys():
                 recurse_k_nodes(node.get('/K'))
                 if "/S" in node.keys():
-                    print(node.get("/S"))
                     if node.get("/S") in headings_map.keys():
                         headings.append(headings_map[node.get("/S")])
 
@@ -243,7 +268,6 @@ def verify_headings(document):
                     if "/K" in each.keys():
                         recurse_k_nodes(each.get("/K"))
                     if "/S" in each.keys():
-                        print(each.get("/S"))
                         if each.get("/S") in headings_map.keys():
 
                             headings.append(headings_map[each.get("/S")])
@@ -353,6 +377,9 @@ def pdf_check(location):
         print("PDF WRITE ERROR", e)
         return None
 
+
+
+print(pdf_check("Z:\ACRS\project_files\eeba80eee44994f0fed10fd9298a8c424f7c7875962a80014b72c52b10f26f9a\source\Distribution of Practice (slides only).pdf"))
 
 #
 # print(pdf_check(r"Z:\ACRS\project_files\47809652311603305dc42a9501a8267c6ec41b8e665de4f0d1a42d4a1d9d0440\active\2007_Book Reviews.pdf"))

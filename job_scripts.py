@@ -8,11 +8,8 @@ from accessConnection import get_session,\
 from pdfValidation import pdf_check
 from WebAPI import create_abbyy_job, check_abbyy_job_status, get_abbyy_job_result, save_job_file
 
-import hashlib
 sys.path.append(r"C:\Users\913678186\IdeaProjects\Moodle_Scraper_V3")
 sys.path.append(r"C:\Users\DanielPC\Desktop\Moodle_Scraper_V3")
-
-hasher = hashlib.sha256()
 
 
 
@@ -102,10 +99,6 @@ def create_file_conversion(request_id: int):
                 )
                 session.add(assignment)
                 session.commit()
-
-
-
-
     session.close()
 
 
@@ -398,6 +391,15 @@ def deactivate_active_job(conversion_id):
             session.commit()
 
 
+
+def remove_entire_conversion_request(request_id: int):
+    pass
+
+
+
+
+
+bulk_pdf_check(6, "source")
 
 
 # deactivate_active_job(988)

@@ -11,6 +11,13 @@ headings_map = {
     pikepdf.Name("/H4"): 4,
     pikepdf.Name("/H5"): 5,
     pikepdf.Name("/H6"): 6,
+    "/H1": 1,
+    "/H2": 2,
+    "/H3": 3,
+    "/H4": 4,
+    "/H5": 5,
+    "/H6": 6,
+
 
 }
 
@@ -39,7 +46,10 @@ def add_bookmarks_from_headings(Pikepdf):
 
     root = Pikepdf.Root.get("/StructTreeRoot")
     parent_tree = root.get("/ParentTree")
-
+    page = Pikepdf.pages[0]
+    print(repr(page))
+    unicode = page.get("/Resources").get("/Font").get("/TT0").get("/ToUnicode").read_bytes()
+    print(unicode.decode('Latin1'))
 
     def check_bookmark(node):
         if node.get("/S") in ["/H1", "/H2", "/H3", "/H4", "/H5", "/H6"]:
@@ -107,58 +117,54 @@ def add_bookmarks_from_headings(Pikepdf):
                 if isinstance(each, Array):
                     recurse_k_nodes(each)
 
-    if Pikepdf.Root.get("/AcroForm"):
-        if "/PDFDocEncoding" in Pikepdf.Root.AcroForm.DR.Encoding.keys():
-            if isinstance(Pikepdf.Root.Pages.Kids, Array):
-                print("Adding Bookmarks")
-                recurse_k_nodes(parent_tree.get("/Nums"))
-            else:
-                print("Page stored as Dict")
-        else:
-            print("Encoding Not Supported for Bookmarks")
-    else:
-        try:
-            recurse_k_nodes(parent_tree.get("/Nums"))
-        except AttributeError:
-            recurse_k_nodes(parent_tree.get("/Kids").get("/Nums"))
+    # if Pikepdf.Root.get("/AcroForm"):
+    #     if "/PDFDocEncoding" in Pikepdf.Root.AcroForm.DR.Encoding.keys():
+    #         if isinstance(Pikepdf.Root.Pages.Kids, Array):
+    #             print("Adding Bookmarks")
+    #             recurse_k_nodes(parent_tree.get("/Nums"))
+    #         else:
+    #             print("Page stored as Dict")
+    #     else:
+    #         print("Encoding Not Supported for Bookmarks")
+    # else:
+    #     try:
+    #         recurse_k_nodes(parent_tree.get("/Nums"))
+    #     except AttributeError:
+    #         recurse_k_nodes(parent_tree.get("/Kids").get("/Nums"))
 
 
 
 def remove_all_headings(document):
 
     root = document.Root.get("/StructTreeRoot")
-    print(type(root))
+    # print(type(root))
     # verify_headings(document)
     first_check = False
     new_stream = []
 
     page = document.pages[0]
+    roleMap = root.get("/RoleMap")
+    print(repr(roleMap))
     # print(page.Contents.read_bytes())
     # print(pikepdf.parse_content_stream(page))
 
-    # index = 0
-    # for operands, operator, in pikepdf.parse_content_stream(page):
-    #     # print(f"operator {operands}", index)
-    #     if len(operands) > 0:
-    #         # print("OP", operands, operator)
-    #         for each in operands:
-    #             if isinstance(each, Name):
-    #                 if repr(each) in headings_map:
-    #                     continue
-    #     else:
-    #         new_stream.append((operands, operator))
-    #         continue
-    #     new_stream.append((operands, operator))
-    #
-    #
-    #
-    #     index += 1
-    #
-    # print(new_stream)
-    # new_content = pikepdf.unparse_content_stream(new_stream)
-    # page.Contents = document.make_stream(new_content)
+
+    for operands, operator, in pikepdf.parse_content_stream(page):
+        # print(f"operator {operands}, {operator}")
+            # print("OP", operands, operator)
+
+        for count, each in enumerate(operands):
+            if isinstance(each, Name):
+                if each in headings_map:
+                    # print(each, count)
+                    # print(operands)
+                    operands.pop(count)
+                    operands.insert(count, pikepdf.Name("/P"))
+        new_stream.append((operands, operator))
 
 
+    new_content = pikepdf.unparse_content_stream(new_stream)
+    page.Contents = document.make_stream(new_content)
 
     def check_dictionary(node):
 
@@ -166,23 +172,23 @@ def remove_all_headings(document):
 
             if node.get("/S") in headings_map.keys():
                 # print(node.get("/P").keys(), type(node))
-
+                # print(repr(node.get("/K")))
                 parent = node.get("/P")
                 child = parent.get("/K")
                 if isinstance(child, Array):
-                    index = 0
                     for each in child:
                         if each.get("/S") in headings_map:
-                            print(repr(child.get("/S")))
-                            del child[index]
+                            pass
+                            # print("SSEEEINK", repr(each.get("/K")))
+                            each["/S"] = Name('/P')
 
 
                         # print(repr(each.get("/S")))
                 if isinstance(child, Dictionary):
-
-                    print(repr(child.get("/S")))
-
-                del node
+                    if child.get("/S") in headings_map:
+                        pass
+                        child["/S"] = Name('/P')
+                        # print("SSEEEINK", repr(child.get("/K")))
 
     def recurse_k_nodes(node):
 
@@ -206,6 +212,7 @@ def remove_all_headings(document):
 def normalize_headings(document):
     verify_headings(document)
     root = document.Root.get("/StructTreeRoot")
+
 
     headings = []
 
@@ -265,6 +272,7 @@ class PdfRepair:
 
     def _open(self):
         self.file = Pdf.open(self.location, allow_overwriting_input=True)
+        print(self.file.open_metadata())
 
     def _finalize(self):
         self.file.save()
@@ -285,11 +293,11 @@ class PdfRepair:
         normalize_headings(self.file)
         self._finalize()
 
-
-
-
-
-test = PdfRepair(r"C:\Users\913678186\IdeaProjects\RemediationTests\testpdf\2007_Book Reviews.pdf")
-getattr(test, "remove_headings")()
+#
+#
+#
+#
+test = PdfRepair(r"Z:\ACRS\project_files\897458a53576aeca31c4d4ad4ca9d7d7a6903176a6311024f0866db750f42dfe\active\2007_Ari Cushner.pdf")
+getattr(test, "add_bookmarks_from_headings")()
 #
 #

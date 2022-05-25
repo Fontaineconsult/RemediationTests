@@ -9,7 +9,7 @@ from core_classes.iLearnPage import iLearnPage
 from network.session_manager import MoodleSession
 download_dir = r"Z:\ACRS\Requests"
 
-hasher = hashlib.sha256()
+
 session = get_session()
 
 def clean_filename(name: str):
@@ -30,11 +30,13 @@ def clean_filename(name: str):
     # ("OL-StrategiesSuccess", "collab", "2152", 3),
     # ("PHIL 101.01", "standard", "18241", 1),
     # ("E_ED 0786-07", "standard", "14719", 2),
+    # ("AAS 510 Temp Shell", "collab", "2191", 5)
 
 pages = [
 
 
-        ("AAS 510 Temp Shell", "collab", "2191", 5)
+
+        ("KIN 0486-01", "standard", "11055", 6)
 ]
 
 
@@ -84,6 +86,7 @@ for page in pages:
                     if os.path.isfile(file_location):
                         with open(file_location, 'rb') as afile:
                             buf = afile.read()
+                            hasher = hashlib.sha256()
                             hasher.update(buf)
                             file_hash = hasher.hexdigest()
                     file_exists = session.query(Files).filter_by(file_location=file_location).first()
