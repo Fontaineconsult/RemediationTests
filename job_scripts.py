@@ -398,9 +398,9 @@ def remove_entire_conversion_request(request_id: int):
 
 
 
-
-bulk_pdf_check(6, "source")
-
+#
+# bulk_pdf_check(6, "source")
+#
 
 # deactivate_active_job(988)
 

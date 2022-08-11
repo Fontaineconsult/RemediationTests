@@ -46,10 +46,6 @@ def add_bookmarks_from_headings(Pikepdf):
 
     root = Pikepdf.Root.get("/StructTreeRoot")
     parent_tree = root.get("/ParentTree")
-    page = Pikepdf.pages[0]
-    print(repr(page))
-    unicode = page.get("/Resources").get("/Font").get("/TT0").get("/ToUnicode").read_bytes()
-    print(unicode.decode('Latin1'))
 
     def check_bookmark(node):
         if node.get("/S") in ["/H1", "/H2", "/H3", "/H4", "/H5", "/H6"]:
@@ -117,20 +113,20 @@ def add_bookmarks_from_headings(Pikepdf):
                 if isinstance(each, Array):
                     recurse_k_nodes(each)
 
-    # if Pikepdf.Root.get("/AcroForm"):
-    #     if "/PDFDocEncoding" in Pikepdf.Root.AcroForm.DR.Encoding.keys():
-    #         if isinstance(Pikepdf.Root.Pages.Kids, Array):
-    #             print("Adding Bookmarks")
-    #             recurse_k_nodes(parent_tree.get("/Nums"))
-    #         else:
-    #             print("Page stored as Dict")
-    #     else:
-    #         print("Encoding Not Supported for Bookmarks")
-    # else:
-    #     try:
-    #         recurse_k_nodes(parent_tree.get("/Nums"))
-    #     except AttributeError:
-    #         recurse_k_nodes(parent_tree.get("/Kids").get("/Nums"))
+    if Pikepdf.Root.get("/AcroForm"):
+        if "/PDFDocEncoding" in Pikepdf.Root.AcroForm.DR.Encoding.keys():
+            if isinstance(Pikepdf.Root.Pages.Kids, Array):
+                print("Adding Bookmarks")
+                recurse_k_nodes(parent_tree.get("/Nums"))
+            else:
+                print("Page stored as Dict")
+        else:
+            print("Encoding Not Supported for Bookmarks")
+    else:
+        try:
+            recurse_k_nodes(parent_tree.get("/Nums"))
+        except AttributeError:
+            recurse_k_nodes(parent_tree.get("/Kids").get("/Nums"))
 
 
 
@@ -297,7 +293,7 @@ class PdfRepair:
 #
 #
 #
-test = PdfRepair(r"Z:\ACRS\project_files\897458a53576aeca31c4d4ad4ca9d7d7a6903176a6311024f0866db750f42dfe\active\2007_Ari Cushner.pdf")
+test = PdfRepair(r"Z:\ACRS\project_files\b49df76399c57d757270aa0f444d0bdae1e80b56c23e7e69cd02259ea3e282a1\active\KIN 697_8 Survey Studies.pdf")
 getattr(test, "add_bookmarks_from_headings")()
 #
 #
