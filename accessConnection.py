@@ -25,6 +25,28 @@ class ConversionFilesAssignments(Base):
 
 
 
+class CanvasImport(Base):
+
+    __tablename__ = 'canvas_import'
+    id = Column(Integer, primary_key=True)
+    resource_type = Column(String)
+    content_type = Column(String)
+    downloadable = Column(Boolean, default=True)
+    is_hidden = Column(Boolean, default=False)
+    mime_type = Column(String)
+    order = Column(Integer)
+    scan_date = Column(DateTime)
+    source_page_title = Column(String)
+    source_page_url = Column(String)
+    title = Column(String)
+    uri = Column(String)
+    course_id = Column(String)
+    alt_tag_present = Column(Boolean, default=False)
+    semester = Column(String)
+    course_gen_id = Column(String)
+    page_component_count = Column(Integer)
+    parent_url = Column(String)
+    content_hidden = Column(String)
 
 class BoxLocations(Base):
 
