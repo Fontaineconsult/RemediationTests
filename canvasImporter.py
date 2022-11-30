@@ -13,12 +13,12 @@ script_locations = {
 }
 
 
-#
-# def scrape_course(course_id):
-#
-#
-#     subprocess.run(f'{script_locations["script_location_home"]} {course_id}',
-#                    shell=True)
+
+def scrape_course(course_id):
+
+
+    subprocess.run(f'{script_locations["script_location_home"]} {course_id}',
+                   shell=True)
 
 
 def import_raw_data(course_id, semester, course_gen_id):
@@ -66,4 +66,6 @@ def import_raw_data(course_id, semester, course_gen_id):
     session.commit()
     session.close()
 
+
+# scrape_course("11008")
 import_raw_data("11008", "fa22", "fa22PH43102")
