@@ -1,5 +1,5 @@
 
-from sqlalchemy import create_engine, Integer, Column, String, DateTime, Boolean, ForeignKey
+from sqlalchemy import create_engine, Integer, Column, String, DateTime, Boolean, ForeignKey, ARRAY
 from sqlalchemy.orm import sessionmaker, declarative_base
 Base = declarative_base()
 from datetime import datetime
@@ -47,6 +47,8 @@ class CanvasImport(Base):
     page_component_count = Column(Integer)
     parent_url = Column(String)
     content_hidden = Column(String)
+    content_path = Column(ARRAY(String))
+    title_path = Column(ARRAY(String))
 
 class BoxLocations(Base):
 

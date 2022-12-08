@@ -16,8 +16,7 @@ script_locations = {
 
 def scrape_course(course_id):
 
-
-    subprocess.run(f'{script_locations["script_location_home"]} {course_id}',
+    subprocess.run(f'{script_locations["script_location"]} {course_id}',
                    shell=True)
 
 
@@ -27,7 +26,7 @@ def import_raw_data(course_id, semester, course_gen_id):
     session = get_session()
 
 
-    with open(f"{script_locations['output_folder_home']}\{course_id}.json", 'r') as json_file:
+    with open(f"{script_locations['output_folder']}\{course_id}.json", 'r') as json_file:
         content = json.loads(json_file.read())
         content_keys = content['content'].keys()
 
@@ -55,11 +54,13 @@ def import_raw_data(course_id, semester, course_gen_id):
                         page_component_count=each['order'],
                         source_page_title=each['source_page_title'],
                         mime_type=each['mime_type'],
-                        parent_url=each['source_page_url'],
+                        source_page_url=each['source_page_url'],
                         content_hidden=each['is_hidden'],
                         semester=semester,
                         alt_tag_present=each.get('alt_tag_present'),
-                        downloadable=each['downloadable']
+                        downloadable=each['downloadable'],
+                        content_path=each['uri_path'],
+                        title_path=each['title_path']
 
                     ))
 
@@ -67,5 +68,5 @@ def import_raw_data(course_id, semester, course_gen_id):
     session.close()
 
 
-# scrape_course("11008")
-import_raw_data("11008", "fa22", "fa22PH43102")
+scrape_course("5585")
+import_raw_data("5585", "fa22", "fa22ENG10575")
