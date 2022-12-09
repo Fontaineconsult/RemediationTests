@@ -1,5 +1,5 @@
 
-from sqlalchemy import create_engine, Integer, Column, String, DateTime, Boolean, ForeignKey, ARRAY
+from sqlalchemy import create_engine, Integer, Column, String, DateTime, Boolean, ForeignKey, ARRAY, LargeBinary
 from sqlalchemy.orm import sessionmaker, declarative_base
 Base = declarative_base()
 from datetime import datetime
@@ -49,6 +49,7 @@ class CanvasImport(Base):
     content_hidden = Column(String)
     content_path = Column(ARRAY(String))
     title_path = Column(ARRAY(String))
+    scan_object = Column(LargeBinary())
 
 class BoxLocations(Base):
 
@@ -164,6 +165,64 @@ class ConversionRequests(Base):
     files_imported = Column(Boolean(), default=False)
     import_folder = Column(String())
 
+
+class CanvasAccessibilityReviews(Base):
+
+    __tablename__ = 'canvas_accessibility_review'
+    id = Column(Integer, primary_key=True)
+    conversion_requester = Column(Integer(), ForeignKey("conversion_requester.id"))
+    json_output_path = Column(String())
+
+
+class Images(Base):
+
+    __tablename__ = 'images'
+    id = Column(Integer, primary_key=True)
+    file_path = Column(String())
+
+
+class Documents(Base):
+
+    __tablename__ = 'documents'
+    id = Column(Integer, primary_key=True)
+    file_path = Column(String())
+
+
+class VideoLinks(Base):
+
+    __tablename__ = 'video_links'
+    id = Column(Integer, primary_key=True)
+    uri = Column(String())
+
+
+class VideoFiles(Base):
+
+    __tablename__ = 'video_files'
+    id = Column(Integer, primary_key=True)
+    file_path = Column(String())
+
+
+class AudioLinks(Base):
+
+    __tablename__ = 'AudioLinks'
+    id = Column(Integer, primary_key=True)
+    uri = Column(String())
+
+
+class PseudoContent(Base):
+
+    __tablename__ = 'pseudo_content'
+    id = Column(Integer, primary_key=True)
+    uri = Column(String())
+
+
+
+class CanvasReviewMeta(Base):
+
+    __tablename__ = 'canvas_accessibility_review_meta'
+    id = Column(Integer, primary_key=True)
+    canvas_review = Column(Integer(), ForeignKey("canvas_accessibility_review.id"))
+    comments = Column(String())
 
 class PDFMetadata(Base):
 
