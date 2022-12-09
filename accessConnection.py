@@ -86,23 +86,24 @@ class Videos(Base):
     origin_requester_id = Column(Integer(), ForeignKey("conversion_requester.id"))
 
 
+class Courses(Base):
+
+    __tablename__ = 'courses'
+    id = Column(Integer, primary_key=True)
+    course_name = Column(String(50))
+    course_gen_id = Column(String(20))
+    ilearn_id = Column(String(50))
+    semester = Column(String(50))
+    canvas_id = Column(String(20))
+
 
 class CourseAssignments(Base):
 
     __tablename__ = 'course_assignments'
     id = Column(Integer, primary_key=True)
     employee_id = Column(String(9),  ForeignKey("employee.employee_id"))
-    course_id = Column(Integer(), ForeignKey("course.id"))
+    course_id = Column(Integer(), ForeignKey("courses.id"))
 
-
-class Courses(Base):
-
-    __tablename__ = 'courses'
-    id = Column(Integer, primary_key=True)
-    course_name = Column(String(50))
-    course_id = Column(String(50))
-    ilearn_id = Column(String(50))
-    semester = Column(String(50))
 
 class CampusAssociation(Base):
 
@@ -132,7 +133,7 @@ class ConversionRequester(Base):
 
     __tablename__ = 'conversion_requester'
     id = Column(Integer, primary_key=True)
-    course_id = Column(Integer(), ForeignKey("course.id"))
+    course_assignment_id = Column(Integer(), ForeignKey("courses.id"))
     campus_association_id = Column(Integer(), ForeignKey("campus_association.id"))
 
 class VideoConversions(Base):
