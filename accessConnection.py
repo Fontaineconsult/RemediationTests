@@ -76,16 +76,6 @@ class AbbyyServerJobs(Base):
     state = Column(String(50))
     progress = Column(Integer())
 
-class Videos(Base):
-
-    __tablename__ = 'videos'
-    id = Column(Integer, primary_key=True)
-    media_type = Column(String(50))
-    title = Column(String())
-    source_url = Column(String())
-    date_added = Column(DateTime, default=datetime.utcnow)
-    origin_requester_id = Column(Integer(), ForeignKey("conversion_requester.id"))
-
 
 class Courses(Base):
 
@@ -137,13 +127,6 @@ class ConversionRequester(Base):
     course_assignment_id = Column(Integer(), ForeignKey("courses.id"))
     campus_association_id = Column(Integer(), ForeignKey("campus_association.id"))
 
-class VideoConversions(Base):
-
-    __tablename__ = 'video_conversions'
-    id = Column(Integer, primary_key=True)
-    video_id = Column(Integer(), ForeignKey("videos.id"))
-    conversion_req_id = Column(Integer(), ForeignKey("conversion_requests.id"))
-
 
 class FileConversions(Base):
 
@@ -172,6 +155,94 @@ class CanvasAccessibilityReviews(Base):
     id = Column(Integer, primary_key=True)
     conversion_requester = Column(Integer(), ForeignKey("conversion_requester.id"))
     json_output_path = Column(String())
+
+
+class AccessibilityReviewNotes(Base):
+
+    __tablename__ = 'canvas_accessibility_review_notes'
+    id = Column(Integer, primary_key=True)
+    canvas_review_id = Column(Integer(), ForeignKey("canvas_accessibility_review.id"))
+
+class CanvasAccessibilityReviewContentAssignments(Base):
+
+    __tablename__ = 'canvas_accessibility_review'
+    id = Column(Integer, primary_key=True)
+    canvas_review_id = Column(Integer(), ForeignKey("canvas_accessibility_review.id"))
+    accessibility_meta_data_assignment = Column(Integer(), ForeignKey("accessibility_metadata_assignment.id"))
+
+
+class AccessibilityMetaDataAssignment(Base):
+
+    __tablename__ = 'accessibility_metadata_assignment'
+
+    id = Column(Integer, primary_key=True)
+    document_file_id = Column(Integer(), ForeignKey("documents.id"))
+    pdf_accessibility_meta = Column(Integer(), ForeignKey("pdf_accessibility_metadata.id"))
+    msword_accessibility_meta = Column(Integer(), ForeignKey("msword_accessibility_metadata.id"))
+    image_file_id = Column(Integer(), ForeignKey("images.id"))
+    image_meta_id = Column(Integer(), ForeignKey("images_accessibility_metadata.id"))
+    video_links_id = Column(Integer(), ForeignKey("video_links.id"))
+    video_links_meta_id = Column(Integer(), ForeignKey("video_links_accessibility_metadata.id"))
+    video_files_id = Column(Integer(), ForeignKey("video_files.id"))
+    video_files_meta_id = Column(Integer(), ForeignKey("video_files_accessibility_metadata.id"))
+    audio_links_id = Column(Integer(), ForeignKey("audio_links.id"))
+    audio_links_meta_id = Column(Integer(), ForeignKey("audio_links_accessibility_metadata.id"))
+    audio_files_id = Column(Integer(), ForeignKey("audio_files.id"))
+    audio_files_meta_id = Column(Integer(), ForeignKey("audio_files_accessibility_metadata.id"))
+    pseudo_content_id = Column(Integer(), ForeignKey("pseudo_content.id"))
+    pseudo_content_meta_id = Column(Integer(), ForeignKey("pseudo_content_accessibility_metadata.id"))
+
+
+
+
+
+
+class ImagesAccessibilityMeta(Base):
+
+    __tablename__ = 'images_accessibility_metadata'
+    id = Column(Integer, primary_key=True)
+
+
+class PDFAccessibilityMeta(Base):
+
+    __tablename__ = 'pdf_accessibility_metadata'
+    id = Column(Integer, primary_key=True)
+
+
+class MSWordAccessibilityMeta(Base):
+
+    __tablename__ = 'msword_accessibility_metadata'
+    id = Column(Integer, primary_key=True)
+
+
+class VideoLinksAccessibilityMeta(Base):
+
+    __tablename__ = 'video_links_accessibility_metadata'
+    id = Column(Integer, primary_key=True)
+
+
+class VideoFilesAccessibilityMeta(Base):
+
+    __tablename__ = 'video_files_accessibility_metadata'
+    id = Column(Integer, primary_key=True)
+
+
+class AudioLinksAccessibilityMeta(Base):
+
+    __tablename__ = 'audio_links_accessibility_metadata'
+    id = Column(Integer, primary_key=True)
+
+
+class AudioFilesAccessibilityMeta(Base):
+
+    __tablename__ = 'audio_files_accessibility_metadata'
+    id = Column(Integer, primary_key=True)
+
+
+class PseudoContentAccessibilityMeta(Base):
+
+    __tablename__ = 'pseudo_content_accessibility_metadata'
+    id = Column(Integer, primary_key=True)
 
 
 class Images(Base):
@@ -204,9 +275,16 @@ class VideoFiles(Base):
 
 class AudioLinks(Base):
 
-    __tablename__ = 'AudioLinks'
+    __tablename__ = 'audio_links'
     id = Column(Integer, primary_key=True)
     uri = Column(String())
+
+
+class AudioFiles(Base):
+
+    __tablename__ = 'audio_files'
+    id = Column(Integer, primary_key=True)
+    file_path = Column(String())
 
 
 class PseudoContent(Base):
