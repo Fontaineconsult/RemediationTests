@@ -4,26 +4,6 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 Base = declarative_base()
 from datetime import datetime
 
-class Files(Base):
-    __tablename__ = 'files'
-    id = Column(Integer, primary_key=True)
-    file_hash = Column(String())
-    file_name = Column(String())
-    file_location = Column(String())
-    file_type = Column(String())
-    origin_requester_id = Column(Integer(), ForeignKey("conversion_requester.id"))
-
-
-
-class ConversionFilesAssignments(Base):
-
-    __tablename__ = 'conversion_file_assignments'
-    id = Column(Integer, primary_key=True)
-    conversion_id = Column(Integer(),  ForeignKey("file_conversions.id"))
-    file_id = Column(Integer(), ForeignKey("files.id"))
-    stage = Column(String())
-
-
 
 class CanvasImport(Base):
 
@@ -51,31 +31,8 @@ class CanvasImport(Base):
     title_path = Column(ARRAY(String))
     scan_object = Column(LargeBinary())
 
-class BoxLocations(Base):
 
-    __tablename__ = "box_locations"
-    id = Column(Integer, primary_key=True)
-    box_url = Column(String())
-    owner = Column(String(), ForeignKey("employee.employee_id"))
-    is_active = Column(Boolean())
-
-
-class BoxAssociations(Base):
-
-    __tablename__ = 'box_associations'
-    id = Column(Integer, primary_key=True)
-    box_id = Column(String(50))
-    conversion_id = Column(String())
-
-class AbbyyServerJobs(Base):
-
-    __tablename__ = 'abbyyserverjobs'
-    id = Column(Integer, primary_key=True)
-    abbyy_job_id = Column(String(50))
-    file_id = Column(Integer, ForeignKey("files.id"))
-    state = Column(String(50))
-    progress = Column(Integer())
-
+### User Data ###
 
 class Courses(Base):
 
@@ -88,11 +45,18 @@ class Courses(Base):
     canvas_id = Column(String(20))
 
 
-class CourseAssignments(Base):
+class EmployeeCourseAssignments(Base):
 
-    __tablename__ = 'course_assignments'
+    __tablename__ = 'employee_course_assignments'
     id = Column(Integer, primary_key=True)
     employee_id = Column(String(9),  ForeignKey("employee.employee_id"))
+    course_id = Column(Integer(), ForeignKey("courses.id"))
+
+class StudentCourseAssignments(Base):
+
+    __tablename__ = 'student_course_assignments'
+    id = Column(Integer, primary_key=True)
+    student_id = Column(String(9),  ForeignKey("students.student_id"))
     course_id = Column(Integer(), ForeignKey("courses.id"))
 
 
@@ -102,6 +66,15 @@ class CampusAssociation(Base):
     id = Column(Integer, primary_key=True)
     campus_org_id = Column(Integer, ForeignKey("orgs.id"))
     employee_id = Column(String(9), ForeignKey("employee.employee_id"))
+
+
+class Students(Base):
+
+    __tablename__ = 'students'
+    student_id = Column(Integer, primary_key=True)
+    first_name = Column(String())
+    last_name = Column(String())
+    email = Column(String())
 
 
 class Employee(Base):
@@ -120,6 +93,7 @@ class Orgs(Base):
     org_contact = Column(String())
     org_email = Column(String())
 
+
 class ConversionRequester(Base):
 
     __tablename__ = 'conversion_requester'
@@ -127,27 +101,7 @@ class ConversionRequester(Base):
     course_assignment_id = Column(Integer(), ForeignKey("courses.id"))
     campus_association_id = Column(Integer(), ForeignKey("campus_association.id"))
 
-
-class FileConversions(Base):
-
-    __tablename__ = 'file_conversions'
-    id = Column(Integer, primary_key=True)
-    source_hierarchy = Column(String())
-    conversion_req_id = Column(Integer(), ForeignKey("conversion_requests.id"))
-    project_dir = Column(String())
-    file_type = Column(String())
-    finalized = Column(Boolean(), default=False)
-    comments = Column(String())
-
-class ConversionRequests(Base):
-
-    __tablename__ = 'conversion_requests'
-    id = Column(Integer, primary_key=True)
-    conversion_requester = Column(Integer(), ForeignKey("conversion_requester.id"))
-    comments = Column(String())
-    files_imported = Column(Boolean(), default=False)
-    import_folder = Column(String())
-
+### Canvas Reviews ###
 
 class CanvasAccessibilityReviews(Base):
 
@@ -165,11 +119,21 @@ class AccessibilityReviewNotes(Base):
 
 class CanvasAccessibilityReviewContentAssignments(Base):
 
-    __tablename__ = 'canvas_accessibility_review'
+    __tablename__ = 'canvas_accessibility_review_assignment'
     id = Column(Integer, primary_key=True)
     canvas_review_id = Column(Integer(), ForeignKey("canvas_accessibility_review.id"))
     accessibility_meta_data_assignment = Column(Integer(), ForeignKey("accessibility_metadata_assignment.id"))
 
+
+class CanvasReviewMeta(Base):
+
+    __tablename__ = 'canvas_accessibility_review_meta'
+    id = Column(Integer, primary_key=True)
+    canvas_review = Column(Integer(), ForeignKey("canvas_accessibility_review.id"))
+    comments = Column(String())
+
+
+### Accessibility Metadata ###
 
 class AccessibilityMetaDataAssignment(Base):
 
@@ -193,10 +157,6 @@ class AccessibilityMetaDataAssignment(Base):
     pseudo_content_meta_id = Column(Integer(), ForeignKey("pseudo_content_accessibility_metadata.id"))
 
 
-
-
-
-
 class ImagesAccessibilityMeta(Base):
 
     __tablename__ = 'images_accessibility_metadata'
@@ -207,6 +167,17 @@ class PDFAccessibilityMeta(Base):
 
     __tablename__ = 'pdf_accessibility_metadata'
     id = Column(Integer, primary_key=True)
+    is_tagged = Column(Boolean(), default=False)
+    text_type = Column(Integer())
+    total_figures = Column(Integer())
+    total_alt_tags = Column(Integer())
+    has_doc_desc = Column(Boolean(), default=False)
+    stage_folder = Column(String())
+    title_set = Column(Boolean(), default=False)
+    lang_set = Column(Boolean(), default=False)
+    number_of_pages = Column(Integer())
+    headings_pass = Column(Boolean(), default=False)
+    has_bookmarks = Column(Boolean(), default=False)
 
 
 class MSWordAccessibilityMeta(Base):
@@ -244,19 +215,19 @@ class PseudoContentAccessibilityMeta(Base):
     __tablename__ = 'pseudo_content_accessibility_metadata'
     id = Column(Integer, primary_key=True)
 
+### Content Tacking ###
+
 
 class Images(Base):
 
     __tablename__ = 'images'
     id = Column(Integer, primary_key=True)
-    file_path = Column(String())
 
 
 class Documents(Base):
 
     __tablename__ = 'documents'
     id = Column(Integer, primary_key=True)
-    file_path = Column(String())
 
 
 class VideoLinks(Base):
@@ -270,7 +241,6 @@ class VideoFiles(Base):
 
     __tablename__ = 'video_files'
     id = Column(Integer, primary_key=True)
-    file_path = Column(String())
 
 
 class AudioLinks(Base):
@@ -284,7 +254,6 @@ class AudioFiles(Base):
 
     __tablename__ = 'audio_files'
     id = Column(Integer, primary_key=True)
-    file_path = Column(String())
 
 
 class PseudoContent(Base):
@@ -294,104 +263,217 @@ class PseudoContent(Base):
     uri = Column(String())
 
 
+### File Tracking ###
 
-class CanvasReviewMeta(Base):
 
-    __tablename__ = 'canvas_accessibility_review_meta'
+class FileAssignments(Base):
+    __tablename__ = 'file_assignments'
     id = Column(Integer, primary_key=True)
-    canvas_review = Column(Integer(), ForeignKey("canvas_accessibility_review.id"))
+    document_files_id = Column(Integer(), ForeignKey("documents.id"))
+    video_files_id = Column(Integer(), ForeignKey("video_files.id"))
+    audio_files_id = Column(Integer(), ForeignKey("audio_files.id"))
+    file_id = Column(Integer(), ForeignKey("files.id"))
+
+
+class Files(Base):
+    __tablename__ = 'files'
+    id = Column(Integer, primary_key=True)
+    file_hash = Column(String())
+    file_name = Column(String())
+    file_location = Column(String())
+    file_type = Column(String())
+
+
+
+### Conversion Tracking ###
+
+
+class GeneralConversionAssignement(Base):
+
+    __tablename__ = 'general_conversion_assignments'
+    id = Column(Integer, primary_key=True)
+    conversion_task_id = Column(Integer(), ForeignKey("conversions_tasks.id"))
+    conversion_requester_id = Column(Integer(), ForeignKey("conversion_requester.id"))
+
+
+class CanvasReviewConversionAssignment(Base):
+
+    __tablename__ = 'canvas_conversion_assignments'
+    id = Column(Integer, primary_key=True)
+    conversion_task_id = Column(Integer(), ForeignKey("conversions_tasks.id"))
+    canvas_content_assignment = Column(Integer(), ForeignKey("canvas_accessibility_review_assignment.id"))
+
+
+class ConversionTasks(Base):
+
+    __tablename__ = 'conversions_tasks'
+    id = Column(Integer, primary_key=True)
+    stage = Column(String())
     comments = Column(String())
 
-class PDFMetadata(Base):
 
-    __tablename__ = 'pdf_metadata'
+class ConversionTypeAssignment(Base):
+
+    __tablename__ = 'conversion_type_assignment'
     id = Column(Integer, primary_key=True)
-    file_id = Column(Integer(), ForeignKey("files.id"))
-    is_tagged = Column(Boolean(), default=False)
-    text_type = Column(Integer())
-    total_figures = Column(Integer())
-    total_alt_tags = Column(Integer())
-    has_doc_desc = Column(Boolean(), default=False)
-    stage_folder = Column(String())
-    title_set = Column(Boolean(), default=False)
-    lang_set = Column(Boolean(), default=False)
-    number_of_pages = Column(Integer())
-    headings_pass = Column(Boolean(), default=False)
-    has_bookmarks = Column(Boolean(), default=False)
+    pdf_conversion_job_id = Column(Integer(), ForeignKey("canvas_accessibility_review_assignment.id"))
+    ms_word_conversion_job_id = Column(Integer(), ForeignKey("canvas_accessibility_review_assignment.id"))
+    ocr_job_id = Column(Integer(), ForeignKey("canvas_accessibility_review_assignment.id"))
+    audio_conversion_job_id = Column(Integer(), ForeignKey("canvas_accessibility_review_assignment.id"))
+    power_point_conversion_job_id = Column(Integer(), ForeignKey("canvas_accessibility_review_assignment.id"))
+    captioning_job_id = Column(Integer(), ForeignKey("canvas_accessibility_review_assignment.id"))
+    transcript_job_id = Column(Integer(), ForeignKey("canvas_accessibility_review_assignment.id"))
 
-class PDFMetadataAssignments(Base):
 
-    __tablename__ = 'pdf_metadata_assignment'
+
+
+### Accessible Conversion Jobs ###
+
+
+class PDFJobs(Base):
+
+    __tablename__ = 'pdf_jobs'
     id = Column(Integer, primary_key=True)
-    file_id = Column(Integer(), ForeignKey("files.id"))
-    metadata_id = Column(Integer(), ForeignKey("pdf_metadata.id"))
 
 
-class SourceStageViewPDF(Base):
+class MSWordJobs(Base):
 
-    __tablename__ = 'source_stage_pdf'
-    is_tagged = Column(Boolean())
-    text_type = Column(Integer())
-    total_figures = Column(Integer())
-    total_alt_tags = Column(Integer())
-    title_set = Column(Boolean())
-    lang_set = Column(Boolean())
-    number_of_pages = Column(Integer())
-    stage = Column(String())
-    source_hierarchy = Column(String())
-    conversion_id = Column(Integer(), primary_key=True)
-    file_name = Column(String())
-    file_location = Column(String())
-    file_hash = Column(String())
-    file_id = Column(Integer())
-    file_type = Column(String())
-    origin_requester_id = Column(Integer())
-    requester_id = Column(Integer())
+    __tablename__ = 'ms_word_jobs'
+    id = Column(Integer, primary_key=True)
 
 
+class OCR_jobs(Base):
 
-class ActiveStageViewPDF(Base):
-
-    __tablename__ = 'active_stage_pdf'
-    is_tagged = Column(Boolean())
-    text_type = Column(Integer())
-    total_figures = Column(Integer())
-    total_alt_tags = Column(Integer())
-    title_set = Column(Boolean())
-    lang_set = Column(Boolean())
-    number_of_pages = Column(Integer())
-    stage = Column(String())
-    source_hierarchy = Column(String())
-    conversion_id = Column(Integer(), primary_key=True)
-    file_name = Column(String())
-    file_location = Column(String())
-    file_hash = Column(String())
-    file_id = Column(Integer())
-    file_type = Column(String())
-    origin_requester_id = Column(Integer())
-    requester_id = Column(Integer())
+    __tablename__ = 'ocr_jobs'
+    id = Column(Integer, primary_key=True)
 
 
-class CompleteStageViewPDF(Base):
+class captioning_jobs(Base):
 
-    __tablename__ = 'complete_stage_pdf'
-    is_tagged = Column(Boolean())
-    text_type = Column(Integer())
-    total_figures = Column(Integer())
-    total_alt_tags = Column(Integer())
-    title_set = Column(Boolean())
-    lang_set = Column(Boolean())
-    number_of_pages = Column(Integer())
-    stage = Column(String())
-    source_hierarchy = Column(String())
-    conversion_id = Column(Integer(), primary_key=True)
-    file_name = Column(String())
-    file_location = Column(String())
-    file_hash = Column(String())
-    file_id = Column(Integer())
-    file_type = Column(String())
-    origin_requester_id = Column(Integer())
-    requester_id = Column(Integer())
+    __tablename__ = 'captioning_jobs'
+    id = Column(Integer, primary_key=True)
+
+class AudioJobs(Base):
+
+    __tablename__ = 'audio_jobs'
+    id = Column(Integer, primary_key=True)
+
+
+
+## Old ##
+
+
+# class BoxLocations(Base):
+#
+#     __tablename__ = "box_locations"
+#     id = Column(Integer, primary_key=True)
+#     box_url = Column(String())
+#     owner = Column(String(), ForeignKey("employee.employee_id"))
+#     is_active = Column(Boolean())
+#
+#
+# class BoxAssociations(Base):
+#
+#     __tablename__ = 'box_associations'
+#     id = Column(Integer, primary_key=True)
+#     box_id = Column(String(50))
+#     conversion_id = Column(String())
+#
+# class AbbyyServerJobs(Base):
+#
+#     __tablename__ = 'abbyyserverjobs'
+#     id = Column(Integer, primary_key=True)
+#     abbyy_job_id = Column(String(50))
+#     file_id = Column(Integer, ForeignKey("files.id"))
+#     state = Column(String(50))
+#     progress = Column(Integer())
+#
+#
+#
+# class FileConversions(Base):
+#
+#     __tablename__ = 'file_conversions'
+#     id = Column(Integer, primary_key=True)
+#     source_hierarchy = Column(String())
+#     conversion_req_id = Column(Integer(), ForeignKey("conversion_requests.id"))
+#     project_dir = Column(String())
+#     file_type = Column(String())
+#     finalized = Column(Boolean(), default=False)
+#     comments = Column(String())
+#
+#
+#
+#
+#
+#
+#
+#
+#
+# class SourceStageViewPDF(Base):
+#
+#     __tablename__ = 'source_stage_pdf'
+#     is_tagged = Column(Boolean())
+#     text_type = Column(Integer())
+#     total_figures = Column(Integer())
+#     total_alt_tags = Column(Integer())
+#     title_set = Column(Boolean())
+#     lang_set = Column(Boolean())
+#     number_of_pages = Column(Integer())
+#     stage = Column(String())
+#     source_hierarchy = Column(String())
+#     conversion_id = Column(Integer(), primary_key=True)
+#     file_name = Column(String())
+#     file_location = Column(String())
+#     file_hash = Column(String())
+#     file_id = Column(Integer())
+#     file_type = Column(String())
+#     origin_requester_id = Column(Integer())
+#     requester_id = Column(Integer())
+#
+#
+#
+# class ActiveStageViewPDF(Base):
+#
+#     __tablename__ = 'active_stage_pdf'
+#     is_tagged = Column(Boolean())
+#     text_type = Column(Integer())
+#     total_figures = Column(Integer())
+#     total_alt_tags = Column(Integer())
+#     title_set = Column(Boolean())
+#     lang_set = Column(Boolean())
+#     number_of_pages = Column(Integer())
+#     stage = Column(String())
+#     source_hierarchy = Column(String())
+#     conversion_id = Column(Integer(), primary_key=True)
+#     file_name = Column(String())
+#     file_location = Column(String())
+#     file_hash = Column(String())
+#     file_id = Column(Integer())
+#     file_type = Column(String())
+#     origin_requester_id = Column(Integer())
+#     requester_id = Column(Integer())
+#
+#
+# class CompleteStageViewPDF(Base):
+#
+#     __tablename__ = 'complete_stage_pdf'
+#     is_tagged = Column(Boolean())
+#     text_type = Column(Integer())
+#     total_figures = Column(Integer())
+#     total_alt_tags = Column(Integer())
+#     title_set = Column(Boolean())
+#     lang_set = Column(Boolean())
+#     number_of_pages = Column(Integer())
+#     stage = Column(String())
+#     source_hierarchy = Column(String())
+#     conversion_id = Column(Integer(), primary_key=True)
+#     file_name = Column(String())
+#     file_location = Column(String())
+#     file_hash = Column(String())
+#     file_id = Column(Integer())
+#     file_type = Column(String())
+#     origin_requester_id = Column(Integer())
+#     requester_id = Column(Integer())
 
 
 #
@@ -405,7 +487,7 @@ class CompleteStageViewPDF(Base):
 # engine = create_engine(connection_uri)
 
 
-psql_connection = "postgresql://postgres:accesslearning!1@130.212.104.18/accessible_media_program"
+psql_connection = "postgresql://postgres:accesslearning!1@130.212.104.18/amcrp_test"
 print(psql_connection)
 engine = create_engine(psql_connection,
                        connect_args={'options': '-csearch_path={}'.format("main"),
