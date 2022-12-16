@@ -56,7 +56,7 @@ class StudentCourseAssignments(Base):
 
     __tablename__ = 'student_course_assignments'
     id = Column(Integer, primary_key=True)
-    student_id = Column(String(9),  ForeignKey("students.student_id"))
+    student_id = Column(Integer(),  ForeignKey("students.student_id"))
     course_id = Column(Integer(), ForeignKey("courses.id"))
 
 
@@ -71,7 +71,7 @@ class CampusAssociation(Base):
 class Students(Base):
 
     __tablename__ = 'students'
-    student_id = Column(Integer, primary_key=True)
+    student_id = Column(Integer(), primary_key=True)
     first_name = Column(String())
     last_name = Column(String())
     email = Column(String())
@@ -218,47 +218,47 @@ class PseudoContentAccessibilityMeta(Base):
 ### Content Tacking ###
 
 
-class Images(Base):
+class CanvasImages(Base):
 
-    __tablename__ = 'images'
+    __tablename__ = 'canvas_images'
     id = Column(Integer, primary_key=True)
 
 
-class Documents(Base):
+class CanvasDocuments(Base):
 
-    __tablename__ = 'documents'
+    __tablename__ = 'canvas_documents'
     id = Column(Integer, primary_key=True)
 
 
-class VideoLinks(Base):
+class CanvasVideoLinks(Base):
 
-    __tablename__ = 'video_links'
-    id = Column(Integer, primary_key=True)
-    uri = Column(String())
-
-
-class VideoFiles(Base):
-
-    __tablename__ = 'video_files'
-    id = Column(Integer, primary_key=True)
-
-
-class AudioLinks(Base):
-
-    __tablename__ = 'audio_links'
+    __tablename__ = 'canvas_video_links'
     id = Column(Integer, primary_key=True)
     uri = Column(String())
 
 
-class AudioFiles(Base):
+class CanvasVideoFiles(Base):
 
-    __tablename__ = 'audio_files'
+    __tablename__ = 'canvas_video_files'
     id = Column(Integer, primary_key=True)
 
 
-class PseudoContent(Base):
+class CanvasAudioLinks(Base):
 
-    __tablename__ = 'pseudo_content'
+    __tablename__ = 'canvas_audio_links'
+    id = Column(Integer, primary_key=True)
+    uri = Column(String())
+
+
+class CanvasAudioFiles(Base):
+
+    __tablename__ = 'canvas_audio_files'
+    id = Column(Integer, primary_key=True)
+
+
+class CanvasPseudoContent(Base):
+
+    __tablename__ = 'canvas_pseudo_content'
     id = Column(Integer, primary_key=True)
     uri = Column(String())
 
@@ -266,13 +266,13 @@ class PseudoContent(Base):
 ### File Tracking ###
 
 
-class FileAssignments(Base):
-    __tablename__ = 'file_assignments'
+class CanvasFileAssignments(Base):
+    __tablename__ = 'canvas_file_assignments'
     id = Column(Integer, primary_key=True)
     document_files_id = Column(Integer(), ForeignKey("documents.id"))
-    video_files_id = Column(Integer(), ForeignKey("video_files.id"))
-    audio_files_id = Column(Integer(), ForeignKey("audio_files.id"))
-    file_id = Column(Integer(), ForeignKey("files.id"))
+    video_files_id = Column(Integer(), ForeignKey("canvas_video_files.id"))
+    audio_files_id = Column(Integer(), ForeignKey("canvas_audio_files.id"))
+    file_id = Column(Integer(), ForeignKey("canvas_files.id"))
 
 
 class Files(Base):
@@ -357,6 +357,33 @@ class AudioJobs(Base):
 
     __tablename__ = 'audio_jobs'
     id = Column(Integer, primary_key=True)
+
+
+
+### course materials ###
+
+class Textbooks(Base):
+
+    __tablename__ = 'textbooks'
+    id = Column(Integer(), primary_key=True)
+    isbn_10 = Column(Integer())
+    isbn_13 = Column(Integer())
+    title = Column(String())
+    course_id = Column(Integer(), ForeignKey("course.id"))
+
+
+class Readers(Base):
+
+    __tablename__ = 'readers'
+    id = Column(Integer(), primary_key=True)
+    title = Column(String())
+    course_id = Column(Integer(), ForeignKey("course.id"))
+
+
+
+
+
+
 
 
 
@@ -490,7 +517,7 @@ class AudioJobs(Base):
 psql_connection = "postgresql://postgres:accesslearning!1@130.212.104.18/amcrp_test"
 print(psql_connection)
 engine = create_engine(psql_connection,
-                       connect_args={'options': '-csearch_path={}'.format("main"),
+                       connect_args={'options': '-csearch_path={}'.format("test"),
                                      'connect_timeout': 5,
                                      'application_name': "application"},
                        client_encoding='utf8',
