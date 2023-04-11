@@ -1,6 +1,6 @@
 import glob, sys, os
 import hashlib
-from accessConnection import get_session, Files, Videos
+# from accessConnection import get_session, Files, Videos
 
 sys.path.append(r"C:\Users\913678186\IdeaProjects\Moodle_Scraper_V3")
 sys.path.append(r"C:\Users\DanielPC\Desktop\Moodle_Scraper_V3")
@@ -10,7 +10,7 @@ from network.session_manager import MoodleSession
 download_dir = r"Z:\ACRS\Requests"
 
 
-session = get_session()
+# session = get_session()
 
 def clean_filename(name: str):
     name = name.replace("%", "")
@@ -36,7 +36,7 @@ pages = [
 
 
 
-        ("KIN 0486-01", "standard", "11055", 6)
+        ("ENG 0583-01", "standard", "8658", 6)
 ]
 
 
@@ -71,7 +71,7 @@ def download(node: ContentFile, course_folder: str, section_folder: str, page_se
 
 for page in pages:
     print("Starting -----  ", page[0])
-    ilearnpage = iLearnPage(page[1], page[2])
+    ilearnpage = iLearnPage(page[1], page[2],"3948ead63a9f2944218de038d8934305")
     ilearnpage.init_session()
     ilearnpage.scrape()
     page_content = ilearnpage.get_content()
@@ -89,32 +89,32 @@ for page in pages:
                             hasher = hashlib.sha256()
                             hasher.update(buf)
                             file_hash = hasher.hexdigest()
-                    file_exists = session.query(Files).filter_by(file_location=file_location).first()
+                    # file_exists = session.query(Files).filter_by(file_location=file_location).first()
 
-                    if not file_exists:
-                        file = Files(
-                            file_hash = hasher.hexdigest(),
-                            file_name = os.path.basename(file_location),
-                            file_location = file_location,
-                            file_type = os.path.splitext(file_location)[1],
-                            origin_requester_id=page[3]
-                        )
-                        session.add(file)
-                        session.commit()
-                        session.close()
+                    # if not file_exists:
+                    #     file = Files(
+                    #         file_hash = hasher.hexdigest(),
+                    #         file_name = os.path.basename(file_location),
+                    #         file_location = file_location,
+                    #         file_type = os.path.splitext(file_location)[1],
+                    #         origin_requester_id=page[3]
+                    #     )
+                    #     session.add(file)
+                    #     session.commit()
+                    #     session.close()
 
-            if item.is_video:
-                video_exists = session.query(Videos).filter_by(source_url=item.url).first()
-                if not video_exists:
-                    file = Videos(
-                        media_type = "Not Sure",
-                        title = item.title,
-                        source_url = item.url,
-                        origin_requester_id=page[3]
-                    )
-                    session.add(file)
-                    session.commit()
-                    session.close()
+            # if item.is_video:
+            #     video_exists = session.query(Videos).filter_by(source_url=item.url).first()
+            #     if not video_exists:
+            #         file = Videos(
+            #             media_type = "Not Sure",
+            #             title = item.title,
+            #             source_url = item.url,
+            #             origin_requester_id=page[3]
+            #         )
+            #         session.add(file)
+            #         session.commit()
+            #         session.close()
 
 
 
