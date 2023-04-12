@@ -9,6 +9,7 @@ Base = declarative_base()
 if __name__ == '__main__':
 
     from campus_resources_model import *
+    from canvas_tracking_model import *
 
     psql_connection = "postgresql://postgres:accesslearning!1@130.212.104.18/amcrp_test"
     print(psql_connection)

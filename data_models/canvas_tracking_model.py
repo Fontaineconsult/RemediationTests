@@ -173,7 +173,7 @@ class CanvasPseudoContent(Base):
 
 class CanvasScanBinaries(Base):
 
-    __tablename__ = 'canvas_pseudo_content'
+    __tablename__ = 'canvas_scan_binaries'
     id = Column(Integer, primary_key=True)
     scan_object = Column(LargeBinary())
     scan_date = Column(DateTime())
